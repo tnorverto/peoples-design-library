@@ -1,0 +1,33 @@
+name: Monthly dead-link report
+
+on:
+  schedule:
+    - cron: "0 5 3 * *"       # 05:00 UTC on the 3rd of every month
+  workflow_dispatch: {}        # or run it manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install beautifulsoup4 lxml
+      - name: Build fresh site data
+        env:
+          PREV_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: python build.py
+      - name: Check all links
+        run: python check_links.py
+      - name: Commit the report
+        run: |
+          git config user.name "link-checker"
+          git config user.email "actions@github.com"
+          git add dead-links-report.md
+          git diff --cached --quiet || git commit -m "Update dead links report"
+          git push
