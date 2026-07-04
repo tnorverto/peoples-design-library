@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The People's Design Library</title>
+<meta name="description" content="A community card catalog of 10,000+ free design, 3D, AI and tutorial resources.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EFF2F1;
+  --card:#FFFFFF;
+  --ink:#15282C;
+  --ink-soft:#4A5D60;
+  --ink-faint:#7C8D8F;
+  --line:#D4DBDA;
+  --line-strong:#B9C4C3;
+  --teal:#2E6E7E;
+  --teal-deep:#12333B;
+  --stamp:#B23A2A;
+  --font-display:"Bricolage Grotesque",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;cursor:pointer;background:none;border:none;color:inherit}
+
+/* ---------- Masthead ---------- */
+.masthead{background:var(--teal-deep);color:#EAF1EF;padding:0 0 0}
+.masthead-inner{max-width:1280px;margin:0 auto;padding:34px 28px 30px}
+.mast-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid rgba(234,241,239,.22);padding-bottom:12px;margin-bottom:22px}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9FC1BC}
+.mast-date{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:#9FC1BC}
+h1{font-family:var(--font-display);font-weight:800;font-size:clamp(34px,6.2vw,78px);line-height:.98;letter-spacing:-.015em;max-width:14ch}
+h1 em{font-style:normal;color:#8FD0C6}
+.mast-stats{display:flex;flex-wrap:wrap;gap:10px 34px;margin-top:26px;font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:#C6D8D4}
+.mast-stats b{color:#fff;font-weight:500}
+.stat-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#8FD0C6;margin-right:8px;vertical-align:1px}
+
+/* ---------- Toolbar ---------- */
+.toolbar{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1px solid var(--line-strong)}
+.toolbar-inner{max-width:1280px;margin:0 auto;padding:14px 28px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.search-wrap{position:relative;flex:1 1 320px;min-width:240px}
+.search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--ink-faint)}
+#search{width:100%;padding:11px 88px 11px 40px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);font:inherit;font-size:14px;color:var(--ink)}
+#search::placeholder{color:var(--ink-faint)}
+#search:focus{outline:2px solid var(--teal);outline-offset:-1px;border-color:var(--teal)}
+.kbd-hint{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);border:1px solid var(--line);border-radius:3px;padding:1px 6px;background:var(--paper);pointer-events:none}
+.picks-toggle{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;letter-spacing:.05em;padding:10px 14px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);color:var(--ink-soft);transition:border-color .15s,color .15s}
+.picks-toggle .stamp-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--stamp);display:inline-block}
+.picks-toggle[aria-pressed="true"]{border-color:var(--stamp);color:var(--stamp);background:#FBF0EE}
+.result-count{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);white-space:nowrap;margin-left:auto}
+
+/* ---------- Layout ---------- */
+.layout{max-width:1280px;margin:0 auto;padding:26px 28px 80px;display:grid;grid-template-columns:262px 1fr;gap:34px;align-items:start}
+
+/* ---------- Sidebar (the drawers) ---------- */
+.drawers{position:sticky;top:76px;max-height:calc(100vh - 96px);overflow-y:auto;scrollbar-width:thin;padding-right:4px}
+.drawers-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
+.drawer{border:1px solid var(--line-strong);border-radius:3px;background:var(--card);margin-bottom:8px;overflow:hidden}
+.drawer-head{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;text-align:left;border-left:4px solid var(--dc,var(--teal));transition:background .12s}
+.drawer-head:hover{background:#F6F8F7}
+.drawer-head .code{font-family:var(--font-mono);font-size:11px;color:var(--dc,var(--teal));font-weight:500;min-width:22px}
+.drawer-head .dname{font-family:var(--font-display);font-weight:700;font-size:14px;flex:1;line-height:1.2}
+.drawer-head .dcount{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint)}
+.drawer-head .chev{width:10px;height:10px;border-right:1.5px solid var(--ink-faint);border-bottom:1.5px solid var(--ink-faint);transform:rotate(-45deg);transition:transform .15s;flex:none}
+.drawer.open .chev{transform:rotate(45deg)}
+.drawer.active .drawer-head{background:#F1F5F4}
+.drawer-sections{display:none;border-top:1px solid var(--line);padding:6px 0}
+.drawer.open .drawer-sections{display:block}
+.sec-btn{display:flex;width:100%;text-align:left;gap:8px;align-items:baseline;padding:5px 12px 5px 22px;font-size:12.5px;color:var(--ink-soft);transition:color .1s,background .1s}
+.sec-btn:hover{color:var(--ink);background:#F6F8F7}
+.sec-btn.active{color:var(--dc,var(--teal));font-weight:600;background:#F1F5F4}
+.sec-btn .n{flex:1}
+.sec-btn .c{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint)}
+.all-btn{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:8px;border-left:4px solid var(--ink)}
+.all-btn:hover{background:#F6F8F7}
+.all-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+/* ---------- Cards ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
+.crumb{grid-column:1/-1;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-soft);padding:4px 0 2px;border-bottom:1px solid var(--line);margin-bottom:2px;display:none}
+.crumb.show{display:block}
+.crumb b{color:var(--ink);font-weight:500}
+.card{position:relative;display:flex;flex-direction:column;gap:8px;background:var(--card);border:1px solid var(--line-strong);border-left:4px solid var(--cc,var(--teal));border-radius:3px;padding:13px 14px 12px;text-decoration:none;transition:transform .13s ease,box-shadow .13s ease,border-color .13s ease;min-height:118px}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(21,40,44,.10);border-color:var(--cc,var(--teal))}
+.card:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.callno{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.05em;color:var(--cc,var(--teal));font-weight:500}
+.domain{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}
+.card-name{font-family:var(--font-display);font-weight:700;font-size:15px;line-height:1.28;letter-spacing:-.005em;overflow-wrap:anywhere}
+.card-path{margin-top:auto;font-size:11.5px;color:var(--ink-faint);line-height:1.35;overflow-wrap:anywhere}
+.card-path .sep{margin:0 4px;color:var(--line-strong)}
+.stamp{position:absolute;top:9px;right:10px;transform:rotate(6deg);font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:.14em;color:var(--stamp);border:1.5px solid var(--stamp);border-radius:2px;padding:2px 5px;opacity:.85;background:rgba(178,58,42,.05)}
+.card.picked .card-top{padding-right:52px}
+
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--ink-soft)}
+.empty .big{font-family:var(--font-display);font-weight:700;font-size:22px;margin-bottom:8px;color:var(--ink)}
+.empty button{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+#sentinel{height:1px;grid-column:1/-1}
+.loading-more{grid-column:1/-1;text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);padding:12px}
+
+/* ---------- Footer ---------- */
+footer{border-top:1px solid var(--line-strong);background:var(--card)}
+.foot-inner{max-width:1280px;margin:0 auto;padding:26px 28px;display:flex;flex-wrap:wrap;gap:10px 30px;justify-content:space-between;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft)}
+
+/* ---------- Mobile ---------- */
+.drawers-toggle{display:none}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;gap:18px;padding:18px 16px 60px}
+  .masthead-inner{padding:24px 16px 22px}
+  .toolbar-inner{padding:10px 16px}
+  .drawers{position:static;max-height:none;display:none;padding:0}
+  .drawers.open{display:block}
+  .drawers-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:11px 14px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);font-family:var(--font-display);font-weight:700;font-size:14px}
+  .result-count{width:100%;margin-left:0}
+  .kbd-hint{display:none}
+  #search{padding-right:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="mast-top">
+      <span class="eyebrow">A Community Card Catalog · Free &amp; Curated</span>
+      <span class="mast-date" id="mastCount"></span>
+    </div>
+    <h1>The People's <em>Design Library</em></h1>
+    <div class="mast-stats" id="mastStats"></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.8-3.8"/></svg>
+      <input id="search" type="search" placeholder="Search the catalog — tools, fonts, textures, tutorials…" autocomplete="off" aria-label="Search resources">
+      <span class="kbd-hint">/</span>
+    </div>
+    <button class="picks-toggle" id="picksBtn" aria-pressed="false"><span class="stamp-dot"></span>Staff picks</button>
+    <span class="result-count" id="count"></span>
+  </div>
+</div>
+
+<div class="layout">
+  <div>
+    <button class="drawers-toggle" id="drawersToggle" aria-expanded="false">Browse collections <span>☰</span></button>
+    <nav class="drawers" id="drawers" aria-label="Collections">
+      <div class="drawers-label">Card Drawers</div>
+      <button class="all-btn active" id="allBtn">All collections</button>
+      <div id="drawerList"></div>
+    </nav>
+  </div>
+  <main>
+    <div class="grid" id="grid">
+      <div class="crumb" id="crumb"></div>
+    </div>
+    <div id="sentinel"></div>
+  </main>
+</div>
+
+<footer>
+  <div class="foot-inner">
+    <span>THE PEOPLE'S DESIGN LIBRARY — converted from the community spreadsheet.</span>
+    <span>Every card links out to a free resource. Support the original creators.</span>
+  </div>
+</footer>
+
+<script>__DATA__</script>
+<script>
+(function(){
+  var L = window.LIB;
+  var cols = L.collections, secs = L.sections, items = L.items;
+  // Precompute
+  var perColCounter = cols.map(function(){return 0});
+  var meta = items.map(function(it){
+    var ci = it[0];
+    perColCounter[ci]++;
+    var call = cols[ci].code + '-' + String(perColCounter[ci]).padStart(4,'0');
+    var hay = (it[3]+' '+it[5]+' '+secs[it[1]].n+' '+it[2]).toLowerCase();
+    return {call:call, hay:hay};
+  });
+  var colCounts = perColCounter.slice();
+  var secCounts = secs.map(function(){return 0});
+  items.forEach(function(it){ secCounts[it[1]]++; });
+  var pickTotal = items.reduce(function(a,it){return a+it[6]},0);
+
+  // Masthead stats
+  document.getElementById('mastCount').textContent = 'VOL. 2026 · OPEN ACCESS';
+  document.getElementById('mastStats').innerHTML =
+    '<span><span class="stat-dot"></span><b>'+items.length.toLocaleString()+'</b> resources</span>'+
+    '<span><span class="stat-dot"></span><b>'+cols.length+'</b> collections</span>'+
+    '<span><span class="stat-dot"></span><b>'+secs.length+'</b> sections</span>'+
+    '<span><span class="stat-dot"></span><b>'+pickTotal+'</b> staff picks</span>';
+
+  // State
+  var state = {q:'', col:-1, sec:-1, picks:false};
+  var filtered = [];
+  var rendered = 0;
+  var CHUNK = 72;
+
+  // Build drawers
+  var drawerList = document.getElementById('drawerList');
+  var secsByCol = cols.map(function(){return []});
+  secs.forEach(function(s,i){ secsByCol[s.c].push(i); });
+  cols.forEach(function(c,ci){
+    var d = document.createElement('div');
+    d.className = 'drawer';
+    d.style.setProperty('--dc', c.color);
+    var secBtns = secsByCol[ci].map(function(si){
+      return '<button class="sec-btn" data-sec="'+si+'" data-col="'+ci+'"><span class="n">'+esc(secs[si].n)+'</span><span class="c">'+secCounts[si]+'</span></button>';
+    }).join('');
+    d.innerHTML = '<button class="drawer-head" data-col="'+ci+'">'+
+      '<span class="code">'+c.code+'</span><span class="dname">'+esc(c.name)+'</span>'+
+      '<span class="dcount">'+colCounts[ci].toLocaleString()+'</span><span class="chev"></span></button>'+
+      '<div class="drawer-sections">'+secBtns+'</div>';
+    drawerList.appendChild(d);
+  });
+
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+  // Filtering
+  function applyFilter(){
+    var q = state.q.trim().toLowerCase();
+    var terms = q ? q.split(/\s+/) : [];
+    filtered = [];
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+      if (state.col>=0 && it[0]!==state.col) continue;
+      if (state.sec>=0 && it[1]!==state.sec) continue;
+      if (state.picks && !it[6]) continue;
+      if (terms.length){
+        var h = meta[i].hay, ok = true;
+        for (var t=0;t<terms.length;t++){ if (h.indexOf(terms[t])===-1){ ok=false; break; } }
+        if (!ok) continue;
+      }
+      filtered.push(i);
+    }
+    rendered = 0;
+    grid.querySelectorAll('.card,.empty,.loading-more').forEach(function(n){n.remove()});
+    updateCrumb();
+    updateCount();
+    renderChunk();
+  }
+
+  var grid = document.getElementById('grid');
+  var crumb = document.getElementById('crumb');
+  var countEl = document.getElementById('count');
+
+  function updateCount(){
+    countEl.textContent = filtered.length.toLocaleString() + ' of ' + items.length.toLocaleString() + ' cards';
+  }
+  function updateCrumb(){
+    var parts = [];
+    if (state.col>=0) parts.push('<b>'+esc(cols[state.col].name)+'</b>');
+    if (state.sec>=0) parts.push(esc(secs[state.sec].n));
+    if (state.picks) parts.push('Staff picks');
+    if (state.q.trim()) parts.push('“'+esc(state.q.trim())+'”');
+    if (parts.length){ crumb.innerHTML = 'FILED UNDER — ' + parts.join(' <span>/</span> '); crumb.classList.add('show'); }
+    else crumb.classList.remove('show');
+  }
+
+  function renderChunk(){
+    var frag = document.createDocumentFragment();
+    var end = Math.min(rendered + CHUNK, filtered.length);
+    for (var i=rendered;i<end;i++){
+      var idx = filtered[i], it = items[idx], m = meta[idx];
+      var a = document.createElement('a');
+      a.className = 'card' + (it[6] ? ' picked' : '');
+      a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.style.setProperty('--cc', cols[it[0]].color);
+      var path = esc(secs[it[1]].n) + (it[2] ? '<span class="sep">›</span>' + esc(it[2]) : '');
+      a.innerHTML = (it[6] ? '<span class="stamp">PICK</span>' : '') +
+        '<div class="card-top"><span class="callno">'+m.call+'</span><span class="domain">'+esc(it[5])+'</span></div>'+
+        '<div class="card-name">'+esc(it[3])+'</div>'+
+        '<div class="card-path">'+path+'</div>';
+      frag.appendChild(a);
+    }
+    rendered = end;
+    if (filtered.length === 0){
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.innerHTML = '<div class="big">No cards in this drawer</div>Try a different search, or <button id="clearAll">clear all filters</button>.';
+      frag.appendChild(e);
+    }
+    grid.appendChild(frag);
+    var ca = document.getElementById('clearAll');
+    if (ca) ca.onclick = function(){ reset(); };
+  }
+
+  // Infinite scroll
+  var sentinel = document.getElementById('sentinel');
+  new IntersectionObserver(function(en){
+    if (en[0].isIntersecting && rendered < filtered.length) renderChunk();
+  }, {rootMargin:'800px'}).observe(sentinel);
+
+  // Search
+  var searchEl = document.getElementById('search');
+  var deb;
+  searchEl.addEventListener('input', function(){
+    clearTimeout(deb);
+    deb = setTimeout(function(){ state.q = searchEl.value; applyFilter(); }, 120);
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key==='/' && document.activeElement!==searchEl){ e.preventDefault(); searchEl.focus(); }
+    if (e.key==='Escape' && document.activeElement===searchEl){ searchEl.value=''; state.q=''; applyFilter(); }
+  });
+
+  // Picks toggle
+  var picksBtn = document.getElementById('picksBtn');
+  picksBtn.addEventListener('click', function(){
+    state.picks = !state.picks;
+    picksBtn.setAttribute('aria-pressed', state.picks);
+    applyFilter();
+  });
+
+  // Drawer navigation
+  var allBtn = document.getElementById('allBtn');
+  allBtn.addEventListener('click', function(){ reset(); });
+
+  function syncNav(){
+    allBtn.classList.toggle('active', state.col===-1);
+    drawerList.querySelectorAll('.drawer').forEach(function(d,ci){
+      d.classList.toggle('active', state.col===ci);
+    });
+    drawerList.querySelectorAll('.sec-btn').forEach(function(b){
+      b.classList.toggle('active', +b.dataset.sec===state.sec);
+    });
+  }
+
+  drawerList.addEventListener('click', function(e){
+    var head = e.target.closest('.drawer-head');
+    var secBtn = e.target.closest('.sec-btn');
+    if (head){
+      var ci = +head.dataset.col;
+      var drawer = head.parentElement;
+      var wasOpen = drawer.classList.contains('open');
+      if (state.col === ci && wasOpen){
+        drawer.classList.remove('open');
+      } else {
+        drawerList.querySelectorAll('.drawer.open').forEach(function(d){ if(d!==drawer) d.classList.remove('open'); });
+        drawer.classList.add('open');
+        state.col = ci; state.sec = -1;
+        syncNav(); applyFilter();
+        maybeCloseMobile();
+      }
+    } else if (secBtn){
+      state.col = +secBtn.dataset.col;
+      state.sec = (state.sec === +secBtn.dataset.sec) ? -1 : +secBtn.dataset.sec;
+      syncNav(); applyFilter();
+      maybeCloseMobile();
+      window.scrollTo({top:0});
+    }
+  });
+
+  function reset(){
+    state = {q:'', col:-1, sec:-1, picks:false};
+    searchEl.value = '';
+    picksBtn.setAttribute('aria-pressed','false');
+    drawerList.querySelectorAll('.drawer.open').forEach(function(d){d.classList.remove('open')});
+    syncNav(); applyFilter();
+  }
+
+  // Mobile drawers toggle
+  var dt = document.getElementById('drawersToggle');
+  var drawersNav = document.getElementById('drawers');
+  dt.addEventListener('click', function(){
+    var open = drawersNav.classList.toggle('open');
+    dt.setAttribute('aria-expanded', open);
+  });
+  function maybeCloseMobile(){
+    if (window.innerWidth <= 900){ drawersNav.classList.remove('open'); dt.setAttribute('aria-expanded','false'); }
+  }
+
+  applyFilter();
+})();
+</script>
+</body>
+</html>
