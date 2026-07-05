@@ -82,6 +82,7 @@ h1 em{font-style:normal;color:#8FD0C6}
 .kbd-hint{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);border:1px solid var(--line);border-radius:3px;padding:1px 6px;background:var(--paper);pointer-events:none}
 .picks-toggle{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;letter-spacing:.05em;padding:10px 14px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);color:var(--ink-soft);transition:border-color .15s,color .15s}
 .picks-toggle .stamp-dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--stamp);display:inline-block}
+select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;cursor:pointer}
 .picks-toggle[aria-pressed="true"]{border-color:var(--stamp);color:var(--stamp);background:#FBF0EE}
 .tips-toggle[aria-pressed="true"]{border-color:#C9A03A;color:#8A6D1D;background:#FBF6E7}
 .new-toggle[aria-pressed="true"]{border-color:var(--teal);color:var(--teal);background:rgba(46,110,126,.12)}
@@ -170,10 +171,25 @@ h1 em{font-style:normal;color:#8FD0C6}
 .card.multi .altbtn{pointer-events:none}
 .card-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:auto}
 .card-foot .card-path{margin-top:0;flex:1}
-.vote{flex:none;display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:999px;padding:3px 9px;background:var(--paper);cursor:pointer;transition:color .15s,border-color .15s,transform .15s}
-.vote:hover{color:var(--teal);border-color:var(--teal)}
-.vote.voted{color:var(--teal);border-color:var(--teal);background:rgba(46,110,126,.12)}
-.vote.pop{transform:scale(1.18)}
+.vote{position:relative;flex:none;display:inline-flex;align-items:center;gap:2px;font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:999px;padding:1px 4px;background:var(--paper)}
+.vote button{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-size:10px;color:var(--ink-faint);transition:color .15s,background .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
+.vote .vup:hover{color:var(--teal);background:rgba(46,110,126,.12)}
+.vote .vdn:hover{color:var(--stamp);background:rgba(178,58,42,.12)}
+.vote .vup.on{color:#fff;background:var(--teal)}
+.vote .vdn.on{color:#fff;background:var(--stamp)}
+.vote button.bounce{transform:translateY(-2px) scale(1.25)}
+.vote .vdn.bounce{transform:translateY(2px) scale(1.25)}
+.vn{display:inline-block;min-width:14px;text-align:center;overflow:hidden}
+.vn.neg{color:var(--stamp)}
+.vn.pos{color:var(--teal);font-weight:500}
+@keyframes vslideup{from{transform:translateY(85%);opacity:0}to{transform:none;opacity:1}}
+@keyframes vslidedn{from{transform:translateY(-85%);opacity:0}to{transform:none;opacity:1}}
+.vn.a-up{animation:vslideup .28s cubic-bezier(.2,.7,.3,1)}
+.vn.a-dn{animation:vslidedn .28s cubic-bezier(.2,.7,.3,1)}
+.vghost{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;font-weight:700;pointer-events:none;animation:ghostup .7s ease-out forwards}
+.vghost.dn{top:auto;bottom:-4px;animation-name:ghostdn}
+@keyframes ghostup{to{transform:translate(-50%,-18px);opacity:0}}
+@keyframes ghostdn{to{transform:translate(-50%,18px);opacity:0}}
 .empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--ink-soft)}
 .empty .big{font-family:var(--font-display);font-weight:700;font-size:22px;margin-bottom:8px;color:var(--ink)}
 .empty button{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
@@ -243,7 +259,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 .mast-logo:hover{transform:rotate(-6deg) scale(1.05)}
 .theme-btn{transition:transform .3s,border-color .15s}
 @keyframes diceroll{20%{transform:rotate(-18deg)}45%{transform:rotate(14deg)}70%{transform:rotate(-8deg)}100%{transform:rotate(0)}}
-#surpriseBtn.rolling{animation:diceroll .45s ease}
+#surpriseBtn.rolling,#songBtn.rolling{animation:diceroll .45s ease}
 .sec-ico{width:18px;display:inline-block;text-align:center;margin-right:2px;flex:none}
 
 /* ---------- Mobile ---------- */
@@ -292,7 +308,12 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     <button class="picks-toggle" id="picksBtn" aria-pressed="false"><span class="stamp-dot"></span>Staff picks</button>
     <button class="picks-toggle tips-toggle" id="tipsBtn" aria-pressed="false">💡 Tips</button>
     <button class="picks-toggle new-toggle" id="newBtn" aria-pressed="false" style="display:none">🆕 New</button>
+    <select class="picks-toggle" id="sortSel" style="display:none" aria-label="Sort cards">
+      <option value="featured">Sort: Featured</option>
+      <option value="useful">Sort: Most useful</option>
+    </select>
     <button class="theme-btn" id="surpriseBtn" aria-label="Surprise me" title="Surprise me — open a random resource">🎲</button>
+    <button class="theme-btn" id="songBtn" aria-label="Random song" title="Random song from the Music section" style="display:none">🎵</button>
     <button class="theme-btn" id="dysBtn" aria-pressed="false" title="Dyslexia-friendly type (Atkinson Hyperlegible)">Aa</button>
     <button class="theme-btn" id="denBtn" aria-pressed="false" title="Comfortable spacing">▤</button>
     <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle dark mode">◐</button>
@@ -348,6 +369,76 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   document.getElementById('coffeeBtn').href = cUrl;
   document.getElementById('coffeeFoot').href = cUrl;
   if (sup.count) document.getElementById('coffeeNote').textContent = sup.count + ' coffees so far — thank you \u2665';
+  // ---- "Useful" upvotes (Firebase Realtime Database over REST) ----
+  // Setup (see README): create a free Firebase project, enable Realtime Database,
+  // paste its URL here, e.g. 'https://myproject-default-rtdb.europe-west1.firebasedatabase.app'
+  var VOTES_DB = '';
+  var votes = {}, myVotes = {};
+  try {
+    var stored = JSON.parse(localStorage.getItem('pdl-voted') || '{}');
+    if (Array.isArray(stored)){ stored.forEach(function(id){ myVotes[id] = 1; }); }
+    else { myVotes = stored || {}; }
+  } catch(e){}
+  function voteId(url){
+    var h = 5381;
+    for (var i = 0; i < url.length; i++){ h = ((h << 5) + h + url.charCodeAt(i)) | 0; }
+    return (h >>> 0).toString(36);
+  }
+  function refreshVoteEls(){
+    grid.querySelectorAll('.vote').forEach(function(b){
+      var id = b.dataset.vid;
+      var n = votes[id] || 0;
+      var vn = b.querySelector('.vn');
+      vn.textContent = n;
+      vn.classList.toggle('neg', n < 0);
+      vn.classList.toggle('pos', n > 0);
+      b.querySelector('.vup').classList.toggle('on', myVotes[id] === 1);
+      b.querySelector('.vdn').classList.toggle('on', myVotes[id] === -1);
+    });
+  }
+  if (VOTES_DB){
+    var sortSel = document.getElementById('sortSel');
+    sortSel.style.display = '';
+    sortSel.addEventListener('change', function(){
+      state.sort = sortSel.value;
+      applyFilter();
+      window.scrollTo({top:0});
+    });
+    fetch(VOTES_DB.replace(/\/$/, '') + '/votes.json')
+      .then(function(r){ return r.json(); })
+      .then(function(j){ votes = j || {}; refreshVoteEls(); if (state.sort === 'useful') applyFilter(); })
+      .catch(function(){});
+  }
+  function castVote(arrow, dir){
+    if (!VOTES_DB) return;
+    var widget = arrow.closest('.vote');
+    var id = widget.dataset.vid;
+    var prev = myVotes[id] || 0;
+    var next = (prev === dir) ? 0 : dir;       // clicking the same arrow again undoes it
+    var delta = next - prev;
+    if (!delta) return;
+    if (next === 0) delete myVotes[id]; else myVotes[id] = next;
+    votes[id] = (votes[id] || 0) + delta;
+    try { localStorage.setItem('pdl-voted', JSON.stringify(myVotes)); } catch(e){}
+    // juice: arrow bounce, odometer slide, floating ghost
+    arrow.classList.remove('bounce'); void arrow.offsetWidth; arrow.classList.add('bounce');
+    setTimeout(function(){ arrow.classList.remove('bounce'); }, 220);
+    var vn = widget.querySelector('.vn');
+    vn.classList.remove('a-up','a-dn'); void vn.offsetWidth;
+    vn.classList.add(delta > 0 ? 'a-up' : 'a-dn');
+    var g = document.createElement('span');
+    g.className = 'vghost' + (delta < 0 ? ' dn' : '');
+    g.style.color = delta > 0 ? 'var(--teal)' : 'var(--stamp)';
+    g.textContent = (delta > 0 ? '+' : '') + delta;
+    widget.appendChild(g);
+    setTimeout(function(){ g.remove(); }, 720);
+    refreshVoteEls();
+    var body = {}; body[id] = {'.sv': {'increment': delta}};
+    fetch(VOTES_DB.replace(/\/$/, '') + '/votes.json', {method: 'PATCH', body: JSON.stringify(body)}).catch(function(){});
+  }
+
+
+
   // Precompute
   var perColCounter = cols.map(function(){return 0});
   var meta = items.map(function(it){
@@ -355,8 +446,9 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     perColCounter[ci]++;
     var call = cols[ci].code + '-' + String(perColCounter[ci]).padStart(4,'0');
     var hay = (it[3]+' '+it[5]+' '+secs[it[1]].n+' '+it[2]+' '+(it[7]||'')).toLowerCase();
+    var vid = it[4] ? voteId(it[4]) : null;
     if (!it[4]){ var t = tips[it[8]]; hay += ' ' + (t.b.join(' ') + ' ' + t.l.map(function(x){return x[0]}).join(' ')).toLowerCase(); }
-    return {call:call, hay:hay};
+    return {call:call, hay:hay, vid:vid};
   });
   var colCounts = perColCounter.slice();
   var secCounts = secs.map(function(){return 0});
@@ -419,7 +511,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   })();
 
   // State
-  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false};
+  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, sort:'featured'};
   var filtered = [];
   var rendered = 0;
   var CHUNK = 72;
@@ -543,45 +635,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
-  // ---- "Useful" upvotes (Firebase Realtime Database over REST) ----
-  // Setup (see README): create a free Firebase project, enable Realtime Database,
-  // paste its URL here, e.g. 'https://myproject-default-rtdb.europe-west1.firebasedatabase.app'
-  var VOTES_DB = '';
-  var votes = {}, myVotes = {};
-  try { (JSON.parse(localStorage.getItem('pdl-voted') || '[]')).forEach(function(id){ myVotes[id] = 1; }); } catch(e){}
-  function voteId(url){
-    var h = 5381;
-    for (var i = 0; i < url.length; i++){ h = ((h << 5) + h + url.charCodeAt(i)) | 0; }
-    return (h >>> 0).toString(36);
-  }
-  function refreshVoteEls(){
-    grid.querySelectorAll('.vote').forEach(function(b){
-      var id = b.dataset.vid;
-      var n = votes[id] || 0;
-      b.querySelector('.vn').textContent = n > 0 ? n : '';
-      b.classList.toggle('voted', !!myVotes[id]);
-      b.title = myVotes[id] ? 'You found this useful' : 'Mark as useful';
-    });
-  }
-  if (VOTES_DB){
-    fetch(VOTES_DB.replace(/\/$/, '') + '/votes.json')
-      .then(function(r){ return r.json(); })
-      .then(function(j){ votes = j || {}; refreshVoteEls(); })
-      .catch(function(){});
-  }
-  function castVote(btn){
-    var id = btn.dataset.vid;
-    if (!VOTES_DB || myVotes[id]) return;
-    myVotes[id] = 1;
-    votes[id] = (votes[id] || 0) + 1;
-    try { localStorage.setItem('pdl-voted', JSON.stringify(Object.keys(myVotes))); } catch(e){}
-    btn.classList.add('pop'); setTimeout(function(){ btn.classList.remove('pop'); }, 200);
-    refreshVoteEls();
-    var body = {}; body[id] = {'.sv': {'increment': 1}};
-    fetch(VOTES_DB.replace(/\/$/, '') + '/votes.json', {method: 'PATCH', body: JSON.stringify(body)}).catch(function(){});
-  }
-
-
   // Filtering
   function applyFilter(){
     var q = state.q.trim().toLowerCase();
@@ -606,9 +659,15 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       filtered.push(i);
     }
     // staff picks surface first, everything else keeps catalog order
-    var p = [], r = [];
-    for (var f=0; f<filtered.length; f++){ (items[filtered[f]][6]&1 ? p : r).push(filtered[f]); }
-    filtered = p.concat(r);
+    if (state.sort === 'useful'){
+      var vc = filtered.map(function(i){ return [i, meta[i].vid ? (votes[meta[i].vid] || 0) : -1]; });
+      vc.sort(function(a, b){ return b[1] - a[1]; });
+      filtered = vc.map(function(x){ return x[0]; });
+    } else {
+      var p = [], r = [];
+      for (var f=0; f<filtered.length; f++){ (items[filtered[f]][6]&1 ? p : r).push(filtered[f]); }
+      filtered = p.concat(r);
+    }
     rendered = 0;
     grid.querySelectorAll('.card,.empty,.loading-more').forEach(function(n){n.remove()});
     updateCrumb();
@@ -793,7 +852,10 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
           alts.map(function(x,xi){return '<a style="animation-delay:'+((xi+1)*35)+'ms" href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(x[0])+' \u2197</a>'}).join('')+'</div>' : '')+
         '<div class="card-foot"><div class="card-path">'+path+'</div>'+
         (VOTES_DB ? (function(){ var vid = voteId(it[4]); var n = votes[vid]||0;
-          return '<button class="vote'+(myVotes[vid]?' voted':'')+'" data-vid="'+vid+'" type="button">\u25B2 Useful <span class="vn">'+(n>0?n:'')+'</span></button>'; })() : '')+
+          return '<span class="vote" data-vid="'+vid+'" title="Was this useful?">'+
+            '<button class="vup'+(myVotes[vid]===1?' on':'')+'" type="button" aria-label="Useful">\u25B2</button>'+
+            '<span class="vn'+(n<0?' neg':(n>0?' pos':''))+'">'+n+'</span>'+
+            '<button class="vdn'+(myVotes[vid]===-1?' on':'')+'" type="button" aria-label="Not useful">\u25BC</button></span>'; })() : '')+
         '</div>';
       a.dataset.url = it[4]; a.dataset.dom = it[5];
       a.classList.add('enter');
@@ -948,7 +1010,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   });
 
   function reset(){
-    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false};
+    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, sort:'featured'};
     searchEl.value = '';
     picksBtn.setAttribute('aria-pressed','false');
     tipsBtn.setAttribute('aria-pressed','false');
@@ -977,8 +1039,9 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
-    var vb = e.target.closest('.vote');
-    if (vb){ e.preventDefault(); e.stopPropagation(); castVote(vb); return; }
+    var up = e.target.closest('.vup'), dn = e.target.closest('.vdn');
+    if (up || dn){ e.preventDefault(); e.stopPropagation(); castVote(up || dn, up ? 1 : -1); return; }
+    if (e.target.closest('.vote')){ e.preventDefault(); e.stopPropagation(); return; }
     if (e.target.closest('a')) return;      // real links inside still open normally
     var card = e.target.closest('.card.multi');
     if (card) toggleMulti(card);
@@ -1002,6 +1065,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (state.picks) p.set('picks', '1');
     if (state.tips) p.set('tips', '1');
     if (state.fresh) p.set('new', '1');
+    if (state.sort !== 'featured') p.set('sort', state.sort);
     if (state.q.trim()) p.set('q', state.q.trim());
     var h = p.toString();
     try {
@@ -1043,6 +1107,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       if (p.get('picks')){ state.picks = true; picksBtn.setAttribute('aria-pressed','true'); }
       if (p.get('tips')){ state.tips = true; tipsBtn.setAttribute('aria-pressed','true'); }
       if (p.get('new') && newTotal){ state.fresh = true; newBtn.setAttribute('aria-pressed','true'); }
+      if (p.get('sort') === 'useful'){ state.sort = 'useful'; var ss = document.getElementById('sortSel'); if (ss) ss.value = 'useful'; }
       if (p.get('q')){ state.q = p.get('q'); searchEl.value = state.q; }
     } catch(e){}
   }
@@ -1083,6 +1148,22 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   }
   persistToggle('dysBtn', 'dys', 'pdl-dys');
   persistToggle('denBtn', 'comfy', 'pdl-comfy');
+
+  // ---- Random song (from the Music sections) ----
+  (function(){
+    var musicPool = [];
+    for (var i = 0; i < items.length; i++){
+      if (items[i][4] && /music/i.test(secs[items[i][1]].n)) musicPool.push(i);
+    }
+    var sb = document.getElementById('songBtn');
+    if (!musicPool.length) return;
+    sb.style.display = '';
+    sb.addEventListener('click', function(){
+      sb.classList.remove('rolling'); void sb.offsetWidth; sb.classList.add('rolling');
+      var pick = items[musicPool[Math.floor(Math.random() * musicPool.length)]];
+      window.open(pick[4], '_blank', 'noopener');
+    });
+  })();
 
   // ---- Dark mode ----
   var themeBtn = document.getElementById('themeBtn');
