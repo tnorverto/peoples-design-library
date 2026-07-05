@@ -443,11 +443,11 @@ def parse_sheet(col_i, html):
                             note = ""
                         elif len(name) <= 3 and len(note) > 3:   # anchor was just "1" etc.
                             name, note = f"{note} {name}", ""
-                entries.append((sec, sub, name + cellfire, a["href"].strip(), note, cellpir))
+                entries.append((sec, sub, name + cellfire, a["href"].strip(), note, cellpir, [], ri))
             else:
                 mains, mnote = split_multilink(td, anchors, text)
                 for name, url, alts in mains:
-                    entries.append((sec, sub, name + cellfire, url, mnote if len(mains) == 1 else "", cellpir, alts))
+                    entries.append((sec, sub, name + cellfire, url, mnote if len(mains) == 1 else "", cellpir, alts, ri))
         elif is_bold(td):
             for c in cols:
                 col_sub[c] = clean_text(text).rstrip(":").strip()
@@ -510,6 +510,7 @@ def build(src):
     prev = previous_urls()
     htmls = load_htmls(src)
     sections, sec_lookup, items, all_tips, seen = [], {}, [], [], set()
+    item_rows = []
 
     for col_i, (fname, disp, code, color) in enumerate(COLLECTIONS):
         if fname not in htmls:
@@ -520,6 +521,7 @@ def build(src):
         n0 = len(items)
         for sec, sub, name, url, note, pir, *rest in entries:
             alts = rest[0] if rest else []
+            entry_row = rest[1] if len(rest) > 1 else None
             key = (col_i, sec)
             if key not in sec_lookup:
                 sec_lookup[key] = len(sections)
@@ -550,19 +552,22 @@ def build(src):
             if alts:
                 row.append([[clean_text(FIRE.sub("", l)), u] for l, u in alts])
             items.append(row)
+            item_rows.append(entry_row)
         print(f"  {disp}: {len(items)-n0} links, {len(tips)} tips, "
               f"{sum(1 for s in sections if s['c']==col_i)} sections")
 
     # tidy URL-named leftovers: drop if the same link already has a proper name, else use its domain
     named = {(i[0], i[4]) for i in items if not re.match(r"https?://", i[3])}
-    tidied = []
-    for i in items:
+    tidied, tidied_rows = [], []
+    for i, rw in zip(items, item_rows):
         if re.match(r"https?://", i[3]):
             if (i[0], i[4]) in named:
                 continue
             i[3] = i[5] or i[3]
         tidied.append(i)
+        tidied_rows.append(rw)
     items = tidied
+    item_rows = tidied_rows
 
     # drop sections that ended up empty and remap indices
     used = {i[1] for i in items}
@@ -622,33 +627,148 @@ def build(src):
         elif t.get("ctx_sec") and (t["c"], t["ctx_sec"]) in sec_lookup:
             si, sub = sec_lookup[(t["c"], t["ctx_sec"])], t.get("ctx_sub", "")
             by_ctx += 1
-        tip_rows.append({"c": t["c"], "s": si, "sub": sub, "t": t["t"], "b": t["body"], "l": t["links"]})
+        tip_rows.append({"c": t["c"], "s": si, "sub": sub, "t": t["t"], "b": t["body"], "l": t["links"], "row": t.get("row")})
     print(f"  tips: {by_title} placed by title, {by_ctx} by spreadsheet position, "
           f"{len(tip_rows)-by_title-by_ctx} fell back to Inspiration")
+
+    # ---- category cleanup transforms ----
+    def ensure_section(c_old, name):
+        key = (c_old, name)
+        if key not in sec_lookup:
+            sec_lookup[key] = len(sections)
+            sections.append({"c": c_old, "n": name})
+        return sec_lookup[key]
+
+    # (a) split POSTERS / ZINES; continents become "The New Yorker Style Magazine Covers"
+    pz = sec_lookup.get((0, "POSTERS / ZINES"))
+    if pz is not None:
+        pos = ensure_section(0, "POSTERS")
+        zin = ensure_section(0, "ZINES")
+        NY = {"Europe", "Italy", "Americas", "Asia", "Spain", "Oceania", "Middle East", "Africa", "North America", "South America"}
+        for i in items:
+            if i[1] != pz:
+                continue
+            if i[2].upper() == "ZINES":
+                i[1], i[2] = zin, ""
+            else:
+                i[1] = pos
+                if i[2] in NY:
+                    i[2] = "The New Yorker Style Magazine Covers · " + i[2]
+        for t in tip_rows:
+            if t["s"] == pz:
+                t["s"] = pos
+
+    # (b) fold all AR texture sections into one hierarchical TEXTURES section
+    TEX_MAP = {
+        "TEXTURES - PLAIN-NO MAPS": "Plain (No Maps)",
+        "TEXTURES W/MAPS - 3D MODELING": "With Maps (3D)",
+        "TEXTURES - WORLD / TERRAIN DISPLACEMENTS": "Terrain Displacements",
+        "VDM BRUSHES / TEXTURES": "VDM Brushes",
+        "TEXTURE CREATION / CHECKERS": "Creation / Checkers",
+        "TEXTURES - LIGHT / SHADOWS / GOBOS / CAUSTICS": "Light / Gobos / Caustics",
+        "APERTURE MAPS / BOKEH TEXTURES": "Aperture / Bokeh",
+    }
+    tex_old = {sec_lookup[(2, n)]: b for n, b in TEX_MAP.items() if (2, n) in sec_lookup}
+    if tex_old:
+        tex = ensure_section(2, "TEXTURES")
+        for i in items:
+            if i[1] in tex_old:
+                block = tex_old[i[1]]
+                i[2] = block + (" · " + i[2] if i[2] else "")
+                i[1] = tex
+        for t in tip_rows:
+            if t["s"] in tex_old:
+                block = tex_old[t["s"]]
+                t["sub"] = block + (" · " + t["sub"] if t.get("sub") else "")
+                t["s"] = tex
+
+    # (c) promote 3D printing into its own three sections (routed to a new collection below)
+    def print_kw(sub):
+        u = (sub or "").upper()
+        if re.search(r"INSPIRATION|IDEAS|PINTEREST|MINIATURE", u):
+            return "3D Print Inspiration"
+        if re.search(r"TUTORIAL|SMOOTH|TIPS|\+|ELECTROPLAT|WOODWORKING", u):
+            return "3D Print Tutorials"
+        if re.search(r"MODEL|STL|GRIDFINITY", u):
+            return "3D Print Assets"
+        return None
+
+    def print_bucket(row, sub, prefer_sub=False):
+        if prefer_sub:
+            k = print_kw(sub)
+            if k:
+                return k
+        if row is not None:                     # sheet row ranges (headers at 856 / 962 / 982)
+            if row <= 961:
+                return "3D Print Inspiration"
+            if row <= 981:
+                return "3D Print Tutorials"
+            return "3D Print Assets"
+        return print_kw(sub) or "3D Print Assets"
+
+    p_old = [sec_lookup[k] for k in ((2, "3D PRINTING"), (2, "3D PRINTING IDEAS")) if k in sec_lookup]
+    if p_old:
+        p_secs = {n: ensure_section(2, n) for n in ("3D Print Inspiration", "3D Print Tutorials", "3D Print Assets")}
+        for idx, i in enumerate(items):
+            if i[1] in p_old:
+                i[1] = p_secs[print_bucket(item_rows[idx], i[2])]
+        for t in tip_rows:
+            if t["s"] in p_old:
+                t["s"] = p_secs[print_bucket(t.get("row"), (t.get("sub") or "") + " " + t["t"], prefer_sub=True)]
+
+    # (d) explicit tip relocations
+    TIP_MOVES = [(re.compile(r"^LUTS?\b", re.I), "LOG LUTS")]
+    for t in tip_rows:
+        for rx, target in TIP_MOVES:
+            if rx.match(t["t"]):
+                key = (sections[t["s"]]["c"], target)
+                if key in sec_lookup:
+                    t["s"], t["sub"] = sec_lookup[key], ""
+
+    # (e) prune sections emptied by the transforms
+    used = {i[1] for i in items}
+    remap2, kept2 = {}, []
+    for si, s in enumerate(sections):
+        if si in used:
+            remap2[si] = len(kept2)
+            kept2.append(s)
+    sections = kept2
+    for i in items:
+        i[1] = remap2[i[1]]
+    for t in tip_rows:
+        t["s"] = remap2.get(t["s"], 0)
+    sec_lookup = {k: remap2[v] for k, v in sec_lookup.items() if v in remap2}
 
     # split "AI, Software & Plugins" into three collections by section name
     OUT_COLLECTIONS = [
         ("Graphic & General Design", "GD", "#2E6E7E"),
         ("Video, Animation & Sound", "VA", "#7A4E8C"),
         ("Architecture & 3D", "AR", "#B07A2A"),
+        ("3D Printing", "PR", "#A5527E"),
         ("A.I.", "AI", "#3D6B35"),
         ("Software", "SW", "#2E6E5A"),
         ("Plugins", "PL", "#8A6D1D"),
         ("Tutorials", "TU", "#34518F"),
         ("Extras", "EX", "#A8502F"),
     ]
-    OLD_TO_NEW = {0: 0, 1: 1, 2: 2, 4: 6, 5: 7}   # AI sheet (3) routes by section
+    OLD_TO_NEW = {0: 0, 1: 1, 2: 2, 4: 7, 5: 8}   # AI sheet (3) routes by section
+    PRINT_SECTIONS = {"3D Print Inspiration", "3D Print Tutorials", "3D Print Assets"}
 
     def route_ai(name):
         u = name.upper()
         if "PLUGIN" in u or "SCRIPT" in u or "ADD-ON" in u:
-            return 5
+            return 6
         if "A.I" in u or "AI " in u or u.startswith("AI") or "CLAUDE" in u or "GPT" in u or "PROMPT" in u:
-            return 3
-        return 4
+            return 4
+        return 5
 
     for s in sections:
-        s["c"] = route_ai(s["n"]) if s["c"] == 3 else OLD_TO_NEW[s["c"]]
+        if s["n"] in PRINT_SECTIONS:
+            s["c"] = 3
+        elif s["c"] == 3:
+            s["c"] = route_ai(s["n"])
+        else:
+            s["c"] = OLD_TO_NEW[s["c"]]
     for i in items:
         i[0] = sections[i[1]]["c"]
     for t in tip_rows:
@@ -659,7 +779,7 @@ def build(src):
         "collections": [{"name": n, "c": None, "code": c, "color": col} for n, c, col in OUT_COLLECTIONS],
         "sections": sections,
         "items": items,
-        "tips": tip_rows,
+        "tips": [{k: v for k, v in t.items() if k != "row"} for t in tip_rows],
         "support": support,
     }
     for co in out["collections"]:
@@ -678,7 +798,10 @@ def build(src):
     db = str(cfg.get("votes_db", "") or "")
     if "PASTE" in db or db.startswith("__"):
         db = ""
+    fb = cfg.get("firebase")
+    fb_json = json.dumps(fb, separators=(",", ":")) if isinstance(fb, dict) and fb.get("apiKey") else "null"
     shell = shell.replace("__GOATCOUNTER__", gc).replace("__VOTES_DB__", db)
+    shell = shell.replace('"__FIREBASE__"', fb_json)
     Path("index.html").write_text(shell.replace("__DATA__", data_js), encoding="utf-8")
     print(f"Built index.html — {len(items)} resources, {len(sections)} sections, "
           f"{sum(i[6] & 1 for i in items)} staff picks, {sum(1 for i in items if i[6] & 2)} pirate-flagged, "

@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
+@font-face{font-family:"Twemoji Country Flags";unicode-range:U+1F1E6-1F1FF;src:url('https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1.8/dist/TwemojiCountryFlags.woff2') format('woff2');font-display:swap}
 :root{
   --paper:#EFF2F1;
   --card:#FFFFFF;
@@ -22,8 +23,8 @@
   --teal-deep:#12333B;
   --stamp:#B23A2A;
   --font-display:"Bricolage Grotesque",system-ui,sans-serif;
-  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"Twemoji Country Flags","IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --font-body:"Twemoji Country Flags",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 [data-theme="dark"]{
   --paper:#0F191B;
@@ -59,7 +60,7 @@ button{font:inherit;cursor:pointer;background:none;border:none;color:inherit}
 /* ---------- Masthead ---------- */
 .masthead{background:var(--teal-deep);color:#EAF1EF;padding:0 0 0}
 .masthead-inner{max-width:1280px;margin:0 auto;padding:34px 28px 30px}
-.mast-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid rgba(234,241,239,.22);padding-bottom:12px;margin-bottom:22px}
+.mast-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid rgba(234,241,239,.22);padding-bottom:12px;margin-bottom:22px}
 .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#9FC1BC}
 .mast-date{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:#9FC1BC}
 .mast-flex{display:flex;align-items:center;justify-content:space-between;gap:24px}
@@ -221,6 +222,18 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .preview .plabel{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);padding:7px 10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
 .preview .plabel .st{color:var(--ink-faint)}
 
+/* ---------- Account & favorites ---------- */
+.auth-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;color:#EAF1EF;border:1px solid rgba(234,241,239,.35);border-radius:999px;padding:5px 12px;cursor:pointer;background:none;transition:border-color .15s}
+.auth-btn:hover{border-color:#8FD0C6;color:#8FD0C6}
+.auth-user{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:#C6D8D4}
+.auth-user img{width:20px;height:20px;border-radius:50%}
+.auth-user .out{cursor:pointer;color:#9FC1BC;border-bottom:1px dotted #9FC1BC}
+.auth-user .out:hover{color:#fff}
+.favb{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:13px;color:var(--ink-faint);transition:color .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
+.favb:hover{color:#E0705A;transform:scale(1.15)}
+.favb.on{color:#E0705A}
+.favb.pop{transform:scale(1.35)}
+
 /* ---------- Post-it tips ---------- */
 .postits{position:fixed;right:42px;top:96px;width:272px;max-height:calc(100vh - 112px);overflow-y:auto;display:none;flex-direction:column;gap:16px;z-index:60;padding:4px;scrollbar-width:none}
 .postits::-webkit-scrollbar{display:none}
@@ -317,6 +330,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     <div class="mast-top">
       <span class="eyebrow">A Community Card Catalog · Free &amp; Curated</span>
       <span class="mast-date" id="mastCount"></span>
+      <span id="authBox" style="display:none"></span>
     </div>
     <div class="mast-flex">
       <h1>The People's <em>Design Library</em></h1>
@@ -336,6 +350,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     </div>
     <button class="picks-toggle" id="picksBtn" aria-pressed="false"><span class="stamp-dot"></span>Staff picks</button>
     <button class="picks-toggle new-toggle" id="newBtn" aria-pressed="false" style="display:none">🆕 New</button>
+    <button class="picks-toggle" id="favFilterBtn" aria-pressed="false" style="display:none">❤ Mine</button>
     <select class="picks-toggle" id="sortSel" style="display:none" aria-label="Sort cards">
       <option value="featured">Sort: Featured</option>
       <option value="useful">Sort: Most useful</option>
@@ -472,6 +487,103 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 
 
 
+  // ---- Google sign-in + favorites (Firebase Auth, REST database writes) ----
+  var FIREBASE = "__FIREBASE__";
+  if (FIREBASE === "__FIREBASE__") FIREBASE = null;
+  var user = null, idToken = null, favSet = {};
+  var favDB = (FIREBASE && FIREBASE.databaseURL) || VOTES_DB;
+
+  function refreshFavEls(){
+    grid.querySelectorAll('.favb').forEach(function(b){
+      var on = !!favSet[b.dataset.vid];
+      b.classList.toggle('on', on);
+      b.textContent = on ? '\u2764' : '\u2661';
+      b.title = user ? (on ? 'Remove from my favorites' : 'Save to my favorites') : 'Sign in to save favorites';
+    });
+  }
+  function toggleFav(btn){
+    if (!user){ signIn(); return; }
+    var vid = btn.dataset.vid;
+    var on = !favSet[vid];
+    if (on) favSet[vid] = 1; else delete favSet[vid];
+    btn.classList.add('pop'); setTimeout(function(){ btn.classList.remove('pop'); }, 200);
+    refreshFavEls();
+    if (state.favs) applyFilter();
+    var body = {}; body[vid] = on ? true : null;
+    fetch(favDB.replace(/\/$/, '') + '/favs/' + user.uid + '.json?auth=' + idToken,
+      {method: 'PATCH', body: JSON.stringify(body)}).catch(function(){});
+  }
+  function loadFavs(){
+    fetch(favDB.replace(/\/$/, '') + '/favs/' + user.uid + '.json?auth=' + idToken)
+      .then(function(r){ return r.json(); })
+      .then(function(j){ favSet = j || {}; refreshFavEls(); if (state.favs) applyFilter(); })
+      .catch(function(){});
+  }
+
+  var authBox = document.getElementById('authBox');
+  var favFilterBtn = document.getElementById('favFilterBtn');
+  function renderAuth(){
+    if (!FIREBASE) return;
+    authBox.style.display = '';
+    if (user){
+      authBox.innerHTML = '<span class="auth-user">' +
+        (user.photoURL ? '<img src="'+esc(user.photoURL)+'" alt="" referrerpolicy="no-referrer">' : '') +
+        esc((user.displayName || user.email || '').split(' ')[0]) +
+        ' \u00B7 <span class="out" id="signOut">sign out</span></span>';
+      document.getElementById('signOut').onclick = function(){ window.firebase.auth().signOut(); };
+      favFilterBtn.style.display = '';
+    } else {
+      authBox.innerHTML = '<button class="auth-btn" id="signIn">\u2764 Sign in to save favorites</button>';
+      document.getElementById('signIn').onclick = signIn;
+      favFilterBtn.style.display = 'none';
+      if (state.favs){ state.favs = false; favFilterBtn.setAttribute('aria-pressed','false'); applyFilter(); }
+    }
+  }
+  function signIn(){
+    if (!window.firebase) return;
+    var p = new window.firebase.auth.GoogleAuthProvider();
+    window.firebase.auth().signInWithPopup(p).catch(function(e){
+      if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')){
+        window.firebase.auth().signInWithRedirect(p);
+      }
+    });
+  }
+  favFilterBtn.addEventListener('click', function(){
+    state.favs = !state.favs;
+    favFilterBtn.setAttribute('aria-pressed', state.favs);
+    applyFilter();
+  });
+
+  (function initAuth(){
+    if (!FIREBASE) return;
+    var host = location.hostname;
+    if (location.protocol === 'file:' || host.indexOf('claudeusercontent') !== -1) return;
+    function load(srcUrl){
+      return new Promise(function(res, rej){
+        var s = document.createElement('script');
+        s.src = srcUrl; s.onload = res; s.onerror = rej;
+        document.body.appendChild(s);
+      });
+    }
+    load('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js')
+      .then(function(){ return load('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js'); })
+      .then(function(){
+        window.firebase.initializeApp(FIREBASE);
+        renderAuth();
+        window.firebase.auth().onAuthStateChanged(function(u){
+          user = u;
+          if (u){
+            u.getIdToken().then(function(t){ idToken = t; loadFavs(); });
+          } else {
+            favSet = {}; idToken = null; refreshFavEls();
+          }
+          renderAuth();
+        });
+      })
+      .catch(function(){});
+  })();
+
+
   // Precompute
   var perColCounter = cols.map(function(){return 0});
   var meta = items.map(function(it){
@@ -544,7 +656,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   })();
 
   // State
-  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, sort:'featured'};
+  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, sort:'featured'};
   var filtered = [];
   var rendered = 0;
   var CHUNK = 72;
@@ -683,6 +795,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       else if (state.blk){ if (it[2]!==state.blk && it[2].indexOf(state.blk+' \u00B7 ')!==0) continue; }
       if (state.picks && !(it[6]&1)) continue;
       if (state.fresh && !(it[6]&4)) continue;
+      if (state.favs && !(meta[i].vid && favSet[meta[i].vid])) continue;
       if (terms.length){
         var h = meta[i].hay, ok = true;
         for (var t=0;t<terms.length;t++){ if (h.indexOf(terms[t])===-1){ ok=false; break; } }
@@ -726,6 +839,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (state.sub) parts.push(esc(tc(state.sub)));
     if (state.picks) parts.push('Staff picks');
     if (state.fresh) parts.push('New this update');
+    if (state.favs) parts.push('\u2764 My favorites');
     if (state.q.trim()) parts.push('“'+esc(state.q.trim())+'”');
     if (parts.length){ crumb.innerHTML = 'FILED UNDER — ' + parts.join(' <span>/</span> '); crumb.classList.add('show'); }
     else crumb.classList.remove('show');
@@ -935,6 +1049,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
           '<div class="altlinks"><a style="animation-delay:0ms" href="'+esc(it[4])+'" target="_blank" rel="noopener noreferrer">1 \u2197</a>'+
           alts.map(function(x,xi){return '<a style="animation-delay:'+((xi+1)*35)+'ms" href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(x[0])+' \u2197</a>'}).join('')+'</div>' : '')+
         '<div class="card-foot"><div class="card-path">'+path+'</div>'+
+        (FIREBASE ? (function(){ var vid = voteId(it[4]);
+          return '<button class="favb'+(favSet[vid]?' on':'')+'" data-vid="'+vid+'" type="button">'+(favSet[vid]?'\u2764':'\u2661')+'</button>'; })() : '')+
         (VOTES_DB ? (function(){ var vid = voteId(it[4]); var n = votes[vid]||0;
           return '<span class="vote" data-vid="'+vid+'" title="Was this useful?">'+
             '<button class="vup'+(myVotes[vid]===1?' on':'')+'" type="button" aria-label="Useful">\u25B2</button>'+
@@ -1035,9 +1151,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       } else {
         drawerList.querySelectorAll('.drawer.open').forEach(function(d){ if(d!==drawer) d.classList.remove('open'); });
         drawer.classList.add('open');
-        state.col = ci; state.sec = -1; state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null; state.grpKey = null;
+        state.col = ci; state.sec = -1; state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null;
         syncNav(); applyFilter();
-        maybeCloseMobile();
       }
     } else if (e.target.closest('.grp-head')){
       var gh = e.target.closest('.grp-head');
@@ -1085,7 +1200,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   });
 
   function reset(){
-    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, sort:'featured'};
+    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, sort:'featured'};
     searchEl.value = '';
     picksBtn.setAttribute('aria-pressed','false');
     newBtn.setAttribute('aria-pressed','false');
@@ -1113,6 +1228,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
+    var fb = e.target.closest('.favb');
+    if (fb){ e.preventDefault(); e.stopPropagation(); toggleFav(fb); return; }
     var up = e.target.closest('.vup'), dn = e.target.closest('.vdn');
     if (up || dn){ e.preventDefault(); e.stopPropagation(); castVote(up || dn, up ? 1 : -1); return; }
     if (e.target.closest('.vote')){ e.preventDefault(); e.stopPropagation(); return; }
