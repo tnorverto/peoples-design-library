@@ -1,4 +1,11 @@
 {
   "goatcounter": "peoplesdesignlibrary",
-  "votes_db": "PASTE-YOUR-FIREBASE-URL-HERE"
+  "votes_db": "https://people-s-design-library-default-rtdb.firebaseio.com",
+  "firebase": {
+    "apiKey": "AIzaSyAApXe9fIajDJv3Qx9tDYvBpg9CxzK7ZDE",
+    "authDomain": "people-s-design-library.firebaseapp.com",
+    "databaseURL": "https://people-s-design-library-default-rtdb.firebaseio.com",
+    "projectId": "people-s-design-library",
+    "appId": "1:655043843108:web:07e775c1c8defae62a34b1"
+  }
 }
