@@ -210,6 +210,23 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .preview .plabel{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-soft);padding:7px 10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
 .preview .plabel .st{color:var(--ink-faint)}
 
+/* ---------- Post-it tips ---------- */
+.postits{position:fixed;right:42px;top:96px;width:272px;max-height:calc(100vh - 112px);overflow-y:auto;display:none;flex-direction:column;gap:14px;z-index:60;padding:4px;scrollbar-width:thin}
+@media (min-width:1560px){.postits.has{display:flex}}
+.postits.open{display:flex}
+@keyframes postdrop{from{opacity:0;transform:translateY(-14px) rotate(-4deg)}to{opacity:1}}
+.postit{background:#F7E8A0;color:#3B3410;padding:14px 15px 12px;border-radius:2px;box-shadow:0 10px 22px rgba(0,0,0,.3);transform:rotate(-1.3deg);font-size:12.5px;line-height:1.6;animation:postdrop .35s cubic-bezier(.2,.7,.3,1) both}
+.postit:nth-child(even){transform:rotate(1.4deg);background:#FAF0B6}
+.postit .pt-title{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.01em;margin-bottom:6px;display:flex;gap:6px;align-items:baseline}
+.postit .pt-body{white-space:pre-line}
+.postit .pt-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.postit .pt-links a{font-family:var(--font-mono);font-size:10.5px;color:#3B3410;border:1px solid rgba(59,52,16,.4);border-radius:3px;padding:2px 8px;text-decoration:none;background:rgba(255,255,255,.35)}
+.postit .pt-links a:hover{background:#fff}
+.postit-fab{position:fixed;right:34px;bottom:22px;z-index:61;display:none;align-items:center;gap:7px;background:#F7E8A0;color:#3B3410;border-radius:999px;padding:10px 16px;font-family:var(--font-mono);font-size:12px;font-weight:500;box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer;transform:rotate(-1deg)}
+.postit-fab.has{display:flex}
+@media (min-width:1560px){.postit-fab.has{display:none}}
+.postit-fab:hover{transform:rotate(0) scale(1.04)}
+
 /* ---------- Tips & Coffee ---------- */
 .coffee-btn{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:10px 18px;background:#C9A03A;color:#241B04;border-radius:3px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-decoration:none;font-weight:500;transition:transform .12s,box-shadow .12s}
 .coffee-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.25)}
@@ -306,7 +323,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       <span class="kbd-hint">/</span>
     </div>
     <button class="picks-toggle" id="picksBtn" aria-pressed="false"><span class="stamp-dot"></span>Staff picks</button>
-    <button class="picks-toggle tips-toggle" id="tipsBtn" aria-pressed="false">💡 Tips</button>
     <button class="picks-toggle new-toggle" id="newBtn" aria-pressed="false" style="display:none">🆕 New</button>
     <select class="picks-toggle" id="sortSel" style="display:none" aria-label="Sort cards">
       <option value="featured">Sort: Featured</option>
@@ -340,6 +356,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   </main>
 </div>
 
+<div class="postits" id="postits"></div>
+<button class="postit-fab" id="postitFab" type="button">💡 <span id="postitFabN"></span> tips</button>
 <div class="preview" id="preview"><img id="previewImg" alt=""><div class="plabel"><span id="previewDom"></span><span class="st" id="previewSt"></span></div></div>
 
 <footer>
@@ -355,14 +373,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   var L = window.LIB;
   var cols = L.collections, secs = L.sections, items = L.items;
   var tips = L.tips || [];
-  // Fold tips into the catalog as a "Tips & Tricks" section per collection
-  var tipSecIdx = {};
-  tips.forEach(function(t){
-    if (!(t.c in tipSecIdx)){ tipSecIdx[t.c] = secs.length; secs.push({c:t.c, n:'\uD83D\uDCA1 Tips & Tricks'}); }
-  });
-  tips.forEach(function(t, ti){
-    items.push([t.c, tipSecIdx[t.c], '', t.t, '', '', 0, '', ti]);
-  });
+  var tipsBySec = {};
+  tips.forEach(function(t){ (tipsBySec[t.s] = tipsBySec[t.s] || []).push(t); });
   // Support / coffee
   var sup = L.support || {};
   var cUrl = sup.url || 'https://buymeacoffee.com/freedesigntools';
@@ -651,7 +663,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       else if (state.blk){ if (it[2]!==state.blk && it[2].indexOf(state.blk+' \u00B7 ')!==0) continue; }
       if (state.picks && !(it[6]&1)) continue;
       if (state.fresh && !(it[6]&4)) continue;
-      if (state.tips && it[4]) continue;
       if (terms.length){
         var h = meta[i].hay, ok = true;
         for (var t=0;t<terms.length;t++){ if (h.indexOf(terms[t])===-1){ ok=false; break; } }
@@ -673,6 +684,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     grid.querySelectorAll('.card,.tipcard,.empty,.loading-more').forEach(function(n){n.remove()});
     updateCrumb();
     updateCount();
+    renderPostits();
     renderJumps();
     renderChunk();
     writeHash();
@@ -694,7 +706,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (state.sub) parts.push(esc(tc(state.sub)));
     if (state.picks) parts.push('Staff picks');
     if (state.fresh) parts.push('New this update');
-    if (state.tips) parts.push('Tips & tricks');
     if (state.q.trim()) parts.push('“'+esc(state.q.trim())+'”');
     if (parts.length){ crumb.innerHTML = 'FILED UNDER — ' + parts.join(' <span>/</span> '); crumb.classList.add('show'); }
     else crumb.classList.remove('show');
@@ -717,6 +728,9 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       navIndex.push({t: b, l: b.toLowerCase(), si: +si, blk: b, kind: 'blk'});
     });
   });
+  tips.forEach(function(t){
+    navIndex.push({t: t.t, l: (t.t + ' ' + t.b.join(' ')).toLowerCase(), si: t.s, kind: 'tip'});
+  });
   var jumpbar = document.getElementById('jumpbar');
   function renderJumps(){
     var q = state.q.trim().toLowerCase();
@@ -732,7 +746,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     jumpbar.innerHTML = '<span class="jumplbl">Jump to</span>' + hits.map(function(n, i){
       var code = cols[secs[n.si].c].code;
       var pre = n.kind==='sec' ? code : code + ' \u203A ' + tc(secs[n.si].n).slice(0,22);
-      return '<button class="jumpchip" data-j="'+i+'"><span class="p">'+esc(pre)+' \u203A </span>'+esc(n.t)+'</button>';
+      var lbl = (n.kind==='tip' ? '\uD83D\uDCA1 ' : '') + tc(n.t);
+      return '<button class="jumpchip" data-j="'+i+'"><span class="p">'+esc(pre)+' \u203A </span>'+esc(lbl)+'</button>';
     }).join('');
     jumpbar._hits = hits;
     jumpbar.style.display = 'flex';
@@ -750,6 +765,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     state.sec = n.si;
     state.sub = n.kind==='sub' ? n.sub : '';
     state.blk = n.kind==='blk' ? n.blk : '';
+    if (n.kind==='tip') setTimeout(function(){ postits.classList.add('open'); }, 50);
     state.grp = null; state.grpKey = null;
     var dr = drawerList.children[state.col];
     drawerList.querySelectorAll('.drawer.open').forEach(function(d){ if(d!==dr) d.classList.remove('open'); });
@@ -757,6 +773,52 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     syncNav(); applyFilter();
     window.scrollTo({top:0});
   });
+
+  // post-it tips for the current section
+  var postits = document.getElementById('postits');
+  var postitFab = document.getElementById('postitFab');
+  function renderPostits(){
+    var list = state.sec >= 0 ? (tipsBySec[state.sec] || []) : [];
+    if (state.sub){
+      list = list.filter(function(t){ return t.sub === state.sub; });
+    } else if (state.blk){
+      list = list.filter(function(t){ return t.sub && (t.sub === state.blk || t.sub.indexOf(state.blk + ' \u00B7 ') === 0); });
+    }
+    if (!list.length){
+      postits.classList.remove('has','open');
+      postitFab.classList.remove('has');
+      postits.innerHTML = '';
+      return;
+    }
+    postits.innerHTML = list.map(function(t, i){
+      return '<div class="postit" style="animation-delay:'+(i*70)+'ms">'+
+        '<div class="pt-title">\uD83D\uDCA1 '+esc(tc(t.t))+'</div>'+
+        (t.b.length ? '<div class="pt-body">'+esc(t.b.join('\n'))+'</div>' : '')+
+        (t.l.length ? '<div class="pt-links">'+t.l.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(x[0])+' \u2197</a>'}).join('')+'</div>' : '')+
+      '</div>';
+    }).join('');
+    postits.classList.add('has');
+    postitFab.classList.add('has');
+    document.getElementById('postitFabN').textContent = list.length;
+    positionPostits();
+  }
+  postitFab.addEventListener('click', function(){ postits.classList.toggle('open'); positionPostits(); });
+  function positionPostits(){
+    if (!postits.innerHTML) return;
+    var gr = grid.getBoundingClientRect();
+    postits.style.top = Math.max(84, gr.top) + 'px';
+    var room = window.innerWidth - gr.right;
+    if (room >= 310){
+      postits.style.left = (gr.right + 22) + 'px';
+      postits.style.right = 'auto';
+    } else {
+      postits.style.left = 'auto';
+      postits.style.right = '42px';
+    }
+    postits.style.maxHeight = 'calc(100vh - ' + (Math.max(84, gr.top) + 16) + 'px)';
+  }
+  window.addEventListener('scroll', function(){ requestAnimationFrame(positionPostits); }, {passive:true});
+  window.addEventListener('resize', function(){ requestAnimationFrame(positionPostits); });
 
   var subbar = document.getElementById('subbar');
   function renderSubbar(){
@@ -911,16 +973,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     newBtn.setAttribute('aria-pressed', state.fresh);
     applyFilter();
   });
-  var tipsBtn = document.getElementById('tipsBtn');
-  tipsBtn.addEventListener('click', function(){
-    state.tips = !state.tips;
-    if (state.tips){ state.sec = -1; state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null; }
-    tipsBtn.setAttribute('aria-pressed', state.tips);
-    syncNav(); applyFilter();
-  });
-  function tipsOff(){
-    if (state.tips){ state.tips = false; tipsBtn.setAttribute('aria-pressed','false'); }
-  }
+  function tipsOff(){}
 
   // Drawer navigation
   var allBtn = document.getElementById('allBtn');
@@ -1014,7 +1067,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, sort:'featured'};
     searchEl.value = '';
     picksBtn.setAttribute('aria-pressed','false');
-    tipsBtn.setAttribute('aria-pressed','false');
     newBtn.setAttribute('aria-pressed','false');
     drawerList.querySelectorAll('.drawer.open').forEach(function(d){d.classList.remove('open')});
     syncNav(); applyFilter();
@@ -1064,7 +1116,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (state.sub) p.set('sub', state.sub);
     if (state.grpKey) p.set('g', state.grpKey);
     if (state.picks) p.set('picks', '1');
-    if (state.tips) p.set('tips', '1');
     if (state.fresh) p.set('new', '1');
     if (state.sort !== 'featured') p.set('sort', state.sort);
     if (state.q.trim()) p.set('q', state.q.trim());
@@ -1106,7 +1157,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       if (p.get('b')) state.blk = p.get('b');
       if (p.get('sub')) state.sub = p.get('sub');
       if (p.get('picks')){ state.picks = true; picksBtn.setAttribute('aria-pressed','true'); }
-      if (p.get('tips')){ state.tips = true; tipsBtn.setAttribute('aria-pressed','true'); }
       if (p.get('new') && newTotal){ state.fresh = true; newBtn.setAttribute('aria-pressed','true'); }
       if (p.get('sort') === 'useful'){ state.sort = 'useful'; var ss = document.getElementById('sortSel'); if (ss) ss.value = 'useful'; }
       if (p.get('q')){ state.q = p.get('q'); searchEl.value = state.q; }
