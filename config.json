@@ -1,4 +1,4 @@
 {
   "goatcounter": "peoplesdesignlibrary",
-  "votes_db": "PASTE-YOUR-FIREBASE-URL-HERE"
+  "votes_db": "https://people-s-design-library-default-rtdb.firebaseio.com/"
 }
