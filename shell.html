@@ -372,7 +372,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   // ---- "Useful" upvotes (Firebase Realtime Database over REST) ----
   // Setup (see README): create a free Firebase project, enable Realtime Database,
   // paste its URL here, e.g. 'https://myproject-default-rtdb.europe-west1.firebasedatabase.app'
-  var VOTES_DB = '';
+  var VOTES_DB = '__VOTES_DB__';
+  if (VOTES_DB.indexOf('__') === 0) VOTES_DB = '';
   var votes = {}, myVotes = {};
   try {
     var stored = JSON.parse(localStorage.getItem('pdl-voted') || '{}');
@@ -1185,7 +1186,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   // ---- Visitor counter (GoatCounter) ----
   // 1. Create a free account at goatcounter.com and set your "code" to the value below
   //    (or change this constant to whatever code you chose).
-  var GOATCOUNTER = 'peoplesdesignlibrary';
+  var GOATCOUNTER = '__GOATCOUNTER__';
+  if (GOATCOUNTER.indexOf('__') === 0) GOATCOUNTER = '';
   (function(){
     if (!GOATCOUNTER) return;
     var host = location.hostname;

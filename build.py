@@ -152,6 +152,42 @@ def good_href(h):
     return isinstance(h, str) and h.startswith(("http://", "https://"))
 
 
+VARIANT_RE = re.compile(r"\d{1,4}|[A-Za-z]{1,2}")
+
+def split_multilink(td, anchors, text):
+    """Group a multi-anchor cell into main links, folding bare numbers/years/tiny
+    labels ("1885", "2", "IG") into the preceding named link as extra links.
+    Returns list of (name, url, alts) and a leftover note for single-main cells."""
+    prefix = cell_prefix(td)
+    mains = []
+    for a in anchors:
+        t = clean_text(a.get_text(" ", strip=True))
+        if re.match(r"https?://", t):
+            t = domain(a["href"]) or t
+        url = a["href"].strip()
+        is_variant = bool(t == "" or VARIANT_RE.fullmatch(t))
+        if is_variant and mains:
+            mains[-1][2].append([t or str(len(mains[-1][2]) + 2), url])
+        elif is_variant and not mains and prefix:
+            mains.append([prefix, url, []])
+        else:
+            name = f"{prefix} {t}".strip() if prefix else (t or domain(url))
+            mains.append([name, url, []])
+    if not mains:                       # all variants, no prefix: keep them separate
+        mains = [[clean_text(a.get_text(" ", strip=True)) or domain(a["href"]), a["href"].strip(), []] for a in anchors]
+    note = ""
+    if len(mains) == 1:
+        residual = text
+        if prefix:
+            residual = residual.replace(prefix, "", 1)
+        for a in anchors:
+            at = clean_text(a.get_text(" ", strip=True))
+            if at:
+                residual = residual.replace(at, "", 1)
+        note = clean_text(re.sub(r"[/,]", " ", residual)).strip(" -–—:/").strip()
+    return mains, note
+
+
 def cell_prefix(td):
     """Text appearing before the first <a> in the cell."""
     first = td.find("a")
@@ -267,10 +303,16 @@ def parse_sheet(col_i, html):
             pz["last"] = ri
             anchors = [a for a in td.find_all("a") if good_href(a.get("href"))]
             if anchors:
-                sub = pz["block"]
-                ch = pz["colhead"].get(ci)
-                if ch:
-                    sub = f"{sub} · {ch}"
+                block, ch = pz["block"], pz["colhead"].get(ci)
+                short = re.sub(r"\s*Patterns\s*$", "", block).strip() or block
+                if block.lower().startswith("historic wallpapers"):
+                    sub = "Archive Catalogues · Wallpapers"
+                elif ch and "archive" in ch.lower() and "catalogue" in ch.lower():
+                    sub = f"Archive Catalogues · {short}"
+                elif ch:
+                    sub = f"Types of Patterns · {short}: {ch}"
+                else:
+                    sub = f"Types of Patterns · {short}"
                 raw = td.get_text(" ", strip=True)
                 cellfire = " 🔥" if FIRE.search(raw) else ""
                 cellpir = 1 if "\U0001F3F4" in raw else 0
@@ -283,13 +325,9 @@ def parse_sheet(col_i, html):
                         note = clean_text(text.replace(atext, "", 1)).strip(" -–—:/").strip()
                     entries.append(("📜 Patterns & Archives", sub, nm + cellfire, a["href"].strip(), note, cellpir))
                 else:
-                    prefix = cell_prefix(td)
-                    for a in anchors:
-                        atext = clean_text(a.get_text(" ", strip=True))
-                        if re.match(r"https?://", atext):
-                            atext = domain(a["href"]) or atext
-                        nm = f"{prefix} {atext}".strip() if prefix else (atext or domain(a["href"]))
-                        entries.append(("📜 Patterns & Archives", sub, nm + cellfire, a["href"].strip(), "", cellpir))
+                    mains, mnote = split_multilink(td, anchors, text)
+                    for nm, url, alts in mains:
+                        entries.append(("📜 Patterns & Archives", sub, nm + cellfire, url, mnote if len(mains) == 1 else "", cellpir, alts))
             elif is_bold(td):
                 pz["colhead"][ci] = clean_text(text).rstrip(":").strip()
             continue
@@ -319,13 +357,9 @@ def parse_sheet(col_i, html):
                         note = clean_text(text.replace(atext, "", 1)).strip(" -–—:/").strip()
                     entries.append(("🛋️ Furnishing Brands", sub, nm + cellfire, a["href"].strip(), note, cellpir))
                 else:
-                    prefix = cell_prefix(td)
-                    for a in anchors:
-                        atext = clean_text(a.get_text(" ", strip=True))
-                        if re.match(r"https?://", atext):
-                            atext = domain(a["href"]) or atext
-                        nm = f"{prefix} {atext}".strip() if prefix else (atext or domain(a["href"]))
-                        entries.append(("🛋️ Furnishing Brands", sub, nm + cellfire, a["href"].strip(), "", cellpir))
+                    mains, mnote = split_multilink(td, anchors, text)
+                    for nm, url, alts in mains:
+                        entries.append(("🛋️ Furnishing Brands", sub, nm + cellfire, url, mnote if len(mains) == 1 else "", cellpir, alts))
             elif is_bold(td):
                 head = clean_text(text.split("(")[0]).strip()
                 if head and head == head.upper() and len(head) >= 4 and ":" not in head:
@@ -359,13 +393,9 @@ def parse_sheet(col_i, html):
                 if len(anchors) == 1:
                     entries.append(("🔤 Keywords", sub, text + cellfire, anchors[0]["href"].strip(), "", cellpir))
                 else:
-                    prefix = cell_prefix(td)
-                    for a in anchors:
-                        atext = clean_text(a.get_text(" ", strip=True))
-                        if re.match(r"https?://", atext):
-                            atext = domain(a["href"]) or atext
-                        nm = f"{prefix} {atext}".strip() if prefix else (atext or domain(a["href"]))
-                        entries.append(("🔤 Keywords", sub, nm + cellfire, a["href"].strip(), "", cellpir))
+                    mains, mnote = split_multilink(td, anchors, text)
+                    for nm, url, alts in mains:
+                        entries.append(("🔤 Keywords", sub, nm + cellfire, url, mnote if len(mains) == 1 else "", cellpir, alts))
             elif is_bold(td):
                 kw["sub"] = clean_text(text).rstrip(":").strip() or None
             continue
@@ -414,13 +444,9 @@ def parse_sheet(col_i, html):
                             name, note = f"{note} {name}", ""
                 entries.append((sec, sub, name + cellfire, a["href"].strip(), note, cellpir))
             else:
-                prefix = cell_prefix(td)
-                for a in anchors:
-                    atext = clean_text(a.get_text(" ", strip=True))
-                    if re.match(r"https?://", atext):
-                        atext = domain(a["href"]) or atext
-                    name = f"{prefix} {atext}".strip() if prefix else (atext or domain(a["href"]))
-                    entries.append((sec, sub, name + cellfire, a["href"].strip(), "", cellpir))
+                mains, mnote = split_multilink(td, anchors, text)
+                for name, url, alts in mains:
+                    entries.append((sec, sub, name + cellfire, url, mnote if len(mains) == 1 else "", cellpir, alts))
         elif is_bold(td):
             for c in cols:
                 col_sub[c] = clean_text(text).rstrip(":").strip()
@@ -482,7 +508,8 @@ def build(src):
         entries, tips = parse_sheet(col_i, htmls[fname])
         all_tips.extend(tips)
         n0 = len(items)
-        for sec, sub, name, url, note, pir in entries:
+        for sec, sub, name, url, note, pir, *rest in entries:
+            alts = rest[0] if rest else []
             key = (col_i, sec)
             if key not in sec_lookup:
                 sec_lookup[key] = len(sections)
@@ -509,7 +536,10 @@ def build(src):
             flags = (1 if pick else 0) | (2 if pir else 0)
             if prev is not None and url not in prev:
                 flags |= 4                     # new since the previous build
-            items.append([col_i, sec_lookup[key], sub or "", name, url, domain(url), flags, note])
+            row = [col_i, sec_lookup[key], sub or "", name, url, domain(url), flags, note]
+            if alts:
+                row.append([[clean_text(FIRE.sub("", l)), u] for l, u in alts])
+            items.append(row)
         print(f"  {disp}: {len(items)-n0} links, {len(tips)} tips, "
               f"{sum(1 for s in sections if s['c']==col_i)} sections")
 
@@ -548,6 +578,17 @@ def build(src):
     data_js = re.sub(r"</(script)", r"<\\/\1", data_js, flags=re.I)
 
     shell = Path("shell.html").read_text(encoding="utf-8")
+    # user settings live in config.json so shell.html updates never wipe them
+    cfg = {}
+    try:
+        cfg = json.loads(Path("config.json").read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    gc = str(cfg.get("goatcounter", "") or "")
+    db = str(cfg.get("votes_db", "") or "")
+    if "PASTE" in db or db.startswith("__"):
+        db = ""
+    shell = shell.replace("__GOATCOUNTER__", gc).replace("__VOTES_DB__", db)
     Path("index.html").write_text(shell.replace("__DATA__", data_js), encoding="utf-8")
     print(f"Built index.html — {len(items)} resources, {len(sections)} sections, "
           f"{sum(i[6] & 1 for i in items)} staff picks, {sum(1 for i in items if i[6] & 2)} pirate-flagged, "
