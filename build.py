@@ -626,8 +626,37 @@ def build(src):
     print(f"  tips: {by_title} placed by title, {by_ctx} by spreadsheet position, "
           f"{len(tip_rows)-by_title-by_ctx} fell back to Inspiration")
 
+    # split "AI, Software & Plugins" into three collections by section name
+    OUT_COLLECTIONS = [
+        ("Graphic & General Design", "GD", "#2E6E7E"),
+        ("Video, Animation & Sound", "VA", "#7A4E8C"),
+        ("Architecture & 3D", "AR", "#B07A2A"),
+        ("A.I.", "AI", "#3D6B35"),
+        ("Software", "SW", "#2E6E5A"),
+        ("Plugins", "PL", "#8A6D1D"),
+        ("Tutorials", "TU", "#34518F"),
+        ("Extras", "EX", "#A8502F"),
+    ]
+    OLD_TO_NEW = {0: 0, 1: 1, 2: 2, 4: 6, 5: 7}   # AI sheet (3) routes by section
+
+    def route_ai(name):
+        u = name.upper()
+        if "PLUGIN" in u or "SCRIPT" in u or "ADD-ON" in u:
+            return 5
+        if "A.I" in u or "AI " in u or u.startswith("AI") or "CLAUDE" in u or "GPT" in u or "PROMPT" in u:
+            return 3
+        return 4
+
+    for s in sections:
+        s["c"] = route_ai(s["n"]) if s["c"] == 3 else OLD_TO_NEW[s["c"]]
+    for i in items:
+        i[0] = sections[i[1]]["c"]
+    for t in tip_rows:
+        t["c"] = sections[t["s"]]["c"]
+
+
     out = {
-        "collections": [{"name": n, "c": None, "code": c, "color": col} for _, n, c, col in COLLECTIONS],
+        "collections": [{"name": n, "c": None, "code": c, "color": col} for n, c, col in OUT_COLLECTIONS],
         "sections": sections,
         "items": items,
         "tips": tip_rows,

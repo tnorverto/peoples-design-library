@@ -131,6 +131,17 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .all-btn:hover{background:#F6F8F7}
 .all-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
+/* ---------- Must-have toolbox ---------- */
+.toolbox{margin-top:14px;border:1px solid #C9A03A;border-radius:3px;background:var(--card);overflow:hidden}
+.toolbox-head{padding:9px 12px;font-family:var(--font-display);font-weight:700;font-size:13px;background:rgba(201,160,58,.12);color:#8A6D1D;border-bottom:1px solid rgba(201,160,58,.4)}
+[data-theme="dark"] .toolbox-head{color:#D9B44A}
+.toolbox-item{padding:9px 12px;border-bottom:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--ink-soft)}
+.toolbox-item:last-child{border-bottom:none}
+.toolbox-item a{color:var(--teal);font-weight:600;text-decoration:none}
+.toolbox-item a:hover{text-decoration:underline}
+.toolbox-item .os{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:1px}
+.toolbox-item .warn{display:block;font-size:11px;font-style:italic;color:var(--ink-faint);margin-top:2px}
+
 /* ---------- Cards ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
 .jumpbar{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:0 0 6px}
@@ -211,7 +222,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .preview .plabel .st{color:var(--ink-faint)}
 
 /* ---------- Post-it tips ---------- */
-.postits{position:fixed;right:42px;top:96px;width:272px;max-height:calc(100vh - 112px);overflow-y:auto;display:none;flex-direction:column;gap:14px;z-index:60;padding:4px;scrollbar-width:thin}
+.postits{position:fixed;right:42px;top:96px;width:272px;max-height:calc(100vh - 112px);overflow-y:auto;display:none;flex-direction:column;gap:16px;z-index:60;padding:4px;scrollbar-width:none}
+.postits::-webkit-scrollbar{display:none}
 @media (min-width:1560px){.postits.has{display:flex}}
 .postits.open{display:flex}
 @keyframes postdrop{from{opacity:0;transform:translateY(-14px) rotate(-4deg)}to{opacity:1}}
@@ -344,6 +356,14 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       <div class="drawers-label">Card Drawers</div>
       <button class="all-btn active" id="allBtn">All collections</button>
       <div id="drawerList"></div>
+      <div class="toolbox" id="toolbox">
+        <div class="toolbox-head">🧰 Must-have Design Tools</div>
+        <div class="toolbox-item">🔥 <a href="https://chromewebstore.google.com/detail/image-downloader-imageye/agionbommeaifngbhincahgmoflcikhm" target="_blank" rel="noopener">Image Downloader</a> — shows you every image on a website for download</div>
+        <div class="toolbox-item"><a href="https://chromewebstore.google.com/detail/online-photo-tool-with-ba/aninmieokgdbdcgoiglchhhhbpnpolja" target="_blank" rel="noopener">Save Image as Type</a> — adds "download as JPG / PNG / WEBP" to the right-click menu</div>
+        <div class="toolbox-item"><span class="os">WIN</span><a href="https://apps.microsoft.com/detail/xp89dcgq3k6vld" target="_blank" rel="noopener">PowerToys</a> — eyedropper for anything on screen (change the shortcut to Win+C)</div>
+        <div class="toolbox-item"><span class="os">MAC</span><a href="https://colorslurp.com/" target="_blank" rel="noopener">ColorSlurp</a> — eyedropper for anything on screen</div>
+        <div class="toolbox-item" id="toolboxFont"></div>
+      </div>
     </nav>
   </div>
   <main>
@@ -807,9 +827,10 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (!postits.innerHTML) return;
     var gr = grid.getBoundingClientRect();
     postits.style.top = Math.max(84, gr.top) + 'px';
+    var W = 272;
     var room = window.innerWidth - gr.right;
-    if (room >= 310){
-      postits.style.left = (gr.right + 22) + 'px';
+    if (room >= W + 40){
+      postits.style.left = (gr.right + (room - W) / 2) + 'px';
       postits.style.right = 'auto';
     } else {
       postits.style.left = 'auto';
@@ -1199,6 +1220,16 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   }
   persistToggle('dysBtn', 'dys', 'pdl-dys');
   persistToggle('denBtn', 'comfy', 'pdl-comfy');
+
+  // ---- Toolbox: font-download trick pulled from the sheet's tips ----
+  (function(){
+    var el = document.getElementById('toolboxFont');
+    var t = tips.filter(function(t){ return /DOWNLOAD ANY FONT/i.test(t.t); })[0];
+    if (!t){ el.remove(); return; }
+    var links = t.l.map(function(x){ return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener">'+esc(x[0])+'</a>'; });
+    el.innerHTML = '\uD83D\uDD24 Download any font from any website: ' + (links.join(' \u2192 ') || '') +
+      '<span class="warn">personal projects only — not for commercial use, obviously</span>';
+  })();
 
   // ---- Random song (from the Music sections) ----
   (function(){
