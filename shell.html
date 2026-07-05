@@ -869,6 +869,36 @@ footer{border-top:1px solid var(--line-strong);background:var(--card)}
   });
   applyTheme();
 
+  // ---- Visitor counter (GoatCounter) ----
+  // 1. Create a free account at goatcounter.com and set your "code" to the value below
+  //    (or change this constant to whatever code you chose).
+  var GOATCOUNTER = 'peoplesdesignlibrary';
+  (function(){
+    if (!GOATCOUNTER) return;
+    var host = location.hostname;
+    if (location.protocol === 'file:' || location.protocol === 'about:' ||
+        host === 'localhost' || host.indexOf('claudeusercontent') !== -1) return;
+    // count this visit
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://gc.zgo.at/count.js';
+    s.setAttribute('data-goatcounter', 'https://' + GOATCOUNTER + '.goatcounter.com/count');
+    document.body.appendChild(s);
+    // show totals in the masthead
+    var base = 'https://' + GOATCOUNTER + '.goatcounter.com/counter/' + location.pathname + '.json';
+    var el = document.createElement('span');
+    document.getElementById('mastStats').appendChild(el);
+    function num(j){ return String(j.count || '').replace(/\s/g, '\u2009'); }
+    fetch(base).then(function(r){ return r.json(); }).then(function(total){
+      var today = new Date().toISOString().slice(0,10);
+      fetch(base + '?start=' + today).then(function(r){ return r.json(); }).then(function(day){
+        el.innerHTML = '<span class="stat-dot"></span><b>' + num(total) + '</b> visits (<b>' + num(day) + '</b> today)';
+      }).catch(function(){
+        el.innerHTML = '<span class="stat-dot"></span><b>' + num(total) + '</b> visits';
+      });
+    }).catch(function(){ el.remove(); });
+  })();
+
   // ---- Probe: can this environment load third-party images at all? ----
   var extImagesOK = null;
   (function(){
