@@ -24,6 +24,17 @@ That's it. From now on you only edit the spreadsheet — the site refreshes itse
 - **🎲 Surprise me**: opens a random resource from whatever is currently filtered.
 - **Monthly dead-link report**: on the 3rd of each month a second workflow checks all links and commits `dead-links-report.md` for you to prune the spreadsheet. It never deletes anything automatically — checkers get fooled by bot-blocking sites, so you stay in control.
 
+## Security notes
+
+**The Firebase apiKey in config.json is not a secret.** GitHub's scanner flags any Google-looking key, but Firebase web API keys are public by design — they ship in every visitor's browser and only *identify* the project. Real security lives in the database rules and the authorized-domains list. You can close the GitHub alert: repo → Security → Secret scanning → the alert → **Close as → False positive**.
+
+That said, two cheap hardening steps are worth doing once:
+
+1. **Restrict the API key** (limits what it can be used for even in theory): console.cloud.google.com → select the project → APIs & Services → Credentials → click the "Browser key (auto created by Firebase)" → under *Application restrictions* choose **Websites** and add `tnorverto.github.io/*` → under *API restrictions* choose **Restrict key** and select *Identity Toolkit API*, *Token Service API*, and *Firebase Installations API* → Save.
+2. The site ships a **Content-Security-Policy** meta tag allowlisting exactly the external services it uses (Firebase, GoatCounter, Google Fonts, favicon/screenshot services). If you ever add a new external service to shell.html, add its origin to the CSP too or the browser will block it.
+
+Known accepted risk: the public vote counters have no rate limiting (the rules only constrain votes to ±1 steps), so a determined script could inflate a count. For a community catalog this is a reasonable trade; Firebase App Check could close it later if it ever becomes a problem.
+
 ## Your settings: config.json
 
 Your personal settings live in `config.json` (not in shell.html), so updating the site's code never erases them:
@@ -47,6 +58,32 @@ The masthead can show total visits and visits today via [GoatCounter](https://ww
 3. Push and rebuild. Counters start from zero on setup day.
 
 The counter deliberately doesn't run on localhost or in preview sandboxes, so testing doesn't inflate your numbers. A literal "people online right now" counter isn't possible on a static host without adding a realtime backend — visits-today is the honest static-site equivalent.
+
+## Google sign-in & favorites
+
+Visitors can sign in with Google and save favorites (a ❤ on every card, plus a "❤ Mine" filter). Setup: enable **Authentication → Sign-in method → Google** in Firebase, add your github.io domain under **Authentication → Settings → Authorized domains**, and put your web app config under `"firebase"` in `config.json`. Then make sure your **Realtime Database rules** are the combined version below (votes + private per-user favorites):
+
+```json
+{
+  "rules": {
+    "votes": {
+      ".read": true,
+      "$id": {
+        ".write": true,
+        ".validate": "newData.isNumber() && ((!data.exists() && (newData.val() === 1 || newData.val() === -1)) || ((newData.val() - data.val()) >= -2 && (newData.val() - data.val()) <= 2 && newData.val() !== data.val()))"
+      }
+    },
+    "favs": {
+      "$uid": {
+        ".read": "auth !== null && auth.uid === $uid",
+        ".write": "auth !== null && auth.uid === $uid"
+      }
+    }
+  }
+}
+```
+
+Favorites are private: each user can only read and write their own list.
 
 ## "Useful" upvotes (5 minutes)
 
