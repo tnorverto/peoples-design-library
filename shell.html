@@ -546,7 +546,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   // ---- "Useful" upvotes (Firebase Realtime Database over REST) ----
   // Setup (see README): create a free Firebase project, enable Realtime Database,
   // paste its URL here, e.g. 'https://myproject-default-rtdb.europe-west1.firebasedatabase.app'
-  var VOTES_DB = 'https://people-s-design-library-default-rtdb.firebaseio.com/';
+  var VOTES_DB = '';
   var votes = {}, myVotes = {};
   try { (JSON.parse(localStorage.getItem('pdl-voted') || '[]')).forEach(function(id){ myVotes[id] = 1; }); } catch(e){}
   function voteId(url){
