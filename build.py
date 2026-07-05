@@ -228,6 +228,7 @@ def parse_sheet(col_i, html):
             plain[(ri, ci)] = t
 
     entries, tips = [], []
+    ctx = []                  # (row, section, sub) of main-column links, for spatial tip matching
     col_section = {}          # col -> section name
     col_sub = {}              # col -> subheader
     tip_state = {}            # col -> {"title","body","links","last"}
@@ -290,7 +291,7 @@ def parse_sheet(col_i, html):
                 kw = {"title": rest.title() if rest.isupper() else rest,
                       "col": ci, "sub": None, "last": ri}
             else:
-                tip_state[ci] = {"c": col_i, "t": rest or "Tip",
+                tip_state[ci] = {"c": col_i, "t": rest or "Tip", "row": ri,
                                  "body": [], "links": [], "last": ri}
             continue
 
@@ -406,11 +407,9 @@ def parse_sheet(col_i, html):
             else:
                 st["last"] = ri
                 links = [a for a in td.find_all("a") if good_href(a.get("href"))]
-                if links:
-                    for a in links:
-                        st["links"].append([clean_text(a.get_text(" ", strip=True)) or domain(a["href"]), a["href"].strip()])
-                else:
-                    st["body"].append(text)
+                st["body"].append(text)          # keep the full sentence, links included
+                for a in links:
+                    st["links"].append([clean_text(a.get_text(" ", strip=True)) or domain(a["href"]), a["href"].strip()])
                 continue
 
         # ---- link cells → entries
@@ -418,6 +417,8 @@ def parse_sheet(col_i, html):
         if anchors:
             sec = col_section.get(ci) or col_section.get("_global") or "General"
             sub = col_sub.get(ci)
+            if ci <= 4:
+                ctx.append((ri, sec, sub or ""))
             raw = td.get_text(" ", strip=True)
             cellfire = " 🔥" if FIRE.search(raw) else ""
             cellpir = 1 if "🏴" in raw else 0
@@ -453,6 +454,15 @@ def parse_sheet(col_i, html):
 
     for c in list(tip_state):
         close_tip(c)
+    for t in tips:
+        row = t.get("row", 0)
+        best = None
+        for (ri, sec, sub) in ctx:
+            key = (abs(ri - row), 0 if sub else 1, 0 if ri <= row else 1)
+            if best is None or key < best[0]:
+                best = (key, sec, sub)
+        if best:
+            t["ctx_sec"], t["ctx_sub"] = best[1], best[2]
     return entries, tips
 
 
@@ -564,16 +574,67 @@ def build(src):
     sections = kept
     for i in items:
         i[1] = remap[i[1]]
+    sec_lookup = {k: remap[v] for k, v in sec_lookup.items() if v in remap}
 
     support = parse_support(htmls["MENU"]) if "MENU" in htmls else {"url": "https://buymeacoffee.com/freedesigntools", "count": None}
 
+    # attach each tip to a section or subcategory: fuzzy title match, else Inspiration
+    def norm(s):
+        return re.sub(r"[^A-Z0-9 ]", "", s.upper()).strip()
+
+    # candidate targets: every section, and every (section, sub) pair, per collection
+    sub_pairs = {}
+    for it in items:
+        if it[2]:
+            sub_pairs.setdefault(it[0], set()).add((it[1], it[2]))
+
+    def match_target(tip):
+        tn = norm(tip["t"])
+        best, best_len = None, 0
+        for si, s in enumerate(sections):
+            if s["c"] != tip["c"]:
+                continue
+            sn = norm(s["n"])
+            if sn and (sn == tn or (len(tn) >= 5 and tn in sn) or (len(sn) >= 5 and sn in tn)):
+                if len(sn) + 1 > best_len:          # sections win ties: safer default
+                    best, best_len = (si, ""), len(sn) + 1
+        for si, sub in sub_pairs.get(tip["c"], ()):
+            bn = norm(sub)
+            if bn and (bn == tn or (len(tn) >= 5 and tn in bn) or (len(bn) >= 5 and bn in tn)):
+                if len(bn) > best_len:
+                    best, best_len = (si, sub), len(bn)
+        if best:
+            return best[0], best[1], True
+        for pat in ("INSPIRATION", "USEFUL", "MISC", "EXTRA"):
+            for si, s in enumerate(sections):
+                if s["c"] == tip["c"] and pat in s["n"].upper():
+                    return si, "", False
+        for si, s in enumerate(sections):
+            if s["c"] == tip["c"]:
+                return si, "", False
+        return 0, "", False
+
+    tip_rows, by_title, by_ctx = [], 0, 0
+    for t in all_tips:
+        si, sub, hit = match_target(t)
+        if hit:
+            by_title += 1
+        elif t.get("ctx_sec") and (t["c"], t["ctx_sec"]) in sec_lookup:
+            si, sub = sec_lookup[(t["c"], t["ctx_sec"])], t.get("ctx_sub", "")
+            by_ctx += 1
+        tip_rows.append({"c": t["c"], "s": si, "sub": sub, "t": t["t"], "b": t["body"], "l": t["links"]})
+    print(f"  tips: {by_title} placed by title, {by_ctx} by spreadsheet position, "
+          f"{len(tip_rows)-by_title-by_ctx} fell back to Inspiration")
+
     out = {
-        "collections": [{"name": n, "code": c, "color": col} for _, n, c, col in COLLECTIONS],
+        "collections": [{"name": n, "c": None, "code": c, "color": col} for _, n, c, col in COLLECTIONS],
         "sections": sections,
         "items": items,
-        "tips": [{"c": t["c"], "t": t["t"], "b": t["body"], "l": t["links"]} for t in all_tips],
+        "tips": tip_rows,
         "support": support,
     }
+    for co in out["collections"]:
+        del co["c"]
     data_js = "window.LIB=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";"
     data_js = re.sub(r"</(script)", r"<\\/\1", data_js, flags=re.I)
 
