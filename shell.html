@@ -1389,7 +1389,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   (function(){
     var musicPool = [];
     for (var i = 0; i < items.length; i++){
-      if (items[i][4] && /music/i.test(secs[items[i][1]].n)) musicPool.push(i);
+      if (items[i][4] && secs[items[i][1]].n === 'MUSIC') musicPool.push(i);
     }
     var sb = document.getElementById('songBtn');
     if (!musicPool.length) return;

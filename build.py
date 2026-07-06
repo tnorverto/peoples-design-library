@@ -509,7 +509,7 @@ def previous_urls():
 def build(src):
     prev = previous_urls()
     htmls = load_htmls(src)
-    sections, sec_lookup, items, all_tips, seen = [], {}, [], [], set()
+    sections, sec_lookup, items, all_tips, seen = [], {}, [], [], {}
     item_rows = []
 
     for col_i, (fname, disp, code, color) in enumerate(COLLECTIONS):
@@ -537,8 +537,16 @@ def build(src):
                     sub = sub[:60].rsplit(" ", 1)[0] + "…"
             dedupe = (col_i, name.lower(), url)
             if dedupe in seen:
+                # duplicate main — but merge in any alt links it carries that we don't already have
+                if alts:
+                    twin = seen[dedupe]
+                    if len(twin) <= 8:
+                        twin.append([])
+                    have = {twin[4]} | {u for _, u in twin[8]}
+                    for l, u in alts:
+                        if u not in have:
+                            twin[8].append([clean_text(FIRE.sub("", l)), u]); have.add(u)
                 continue
-            seen.add(dedupe)
             note = clean_text(FIRE.sub("", note or ""))
             if len(note) > 140:
                 note = note[:140].rsplit(" ", 1)[0] + "…"
@@ -551,6 +559,7 @@ def build(src):
             row = [col_i, sec_lookup[key], sub or "", name, url, domain(url), flags, note]
             if alts:
                 row.append([[clean_text(FIRE.sub("", l)), u] for l, u in alts])
+            seen[dedupe] = row
             items.append(row)
             item_rows.append(entry_row)
         print(f"  {disp}: {len(items)-n0} links, {len(tips)} tips, "
