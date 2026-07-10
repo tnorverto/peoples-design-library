@@ -158,6 +158,14 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 
 /* ---------- Cards ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
+.facetbar{grid-column:1/-1;display:none;flex-wrap:wrap;gap:7px;align-items:center;padding:0 0 8px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.facetbar.show{display:flex}
+.facetlbl{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;margin-right:2px}
+.facetchip{font-family:var(--font-mono);font-size:11px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:999px;background:var(--card);color:var(--ink-soft);cursor:pointer;transition:border-color .12s,color .12s}
+.facetchip:hover{border-color:var(--teal);color:var(--teal)}
+.facetchip.active{border-color:var(--teal);color:var(--teal);background:rgba(46,110,126,.12);font-weight:500}
+.facetchip .fc{opacity:.6;margin-left:5px}
+.facetchip .code{opacity:.5;margin-right:5px;font-size:10px}
 .jumpbar{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:0 0 6px}
 .jumplbl{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;margin-right:2px}
 .jumpchip{font-family:var(--font-mono);font-size:11px;padding:5px 11px;border:1px dashed var(--line-strong);border-radius:999px;background:transparent;color:var(--teal);transition:border-color .12s}
@@ -446,6 +454,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   <main>
     <div class="grid" id="grid">
       <div class="crumb" id="crumb"></div>
+      <div class="facetbar" id="facetbar"></div>
       <div class="jumpbar" id="jumpbar" style="display:none"></div>
       <div class="subbar" id="subbar" style="display:none"></div>
     </div>
@@ -737,7 +746,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   })();
 
   // State
-  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, sort:'featured'};
+  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, facet:-1, sort:'featured'};
   var filtered = [];
   var rendered = 0;
   var CHUNK = 72;
@@ -877,6 +886,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       if (state.picks && !(it[6]&1)) continue;
       if (state.fresh && !(it[6]&4)) continue;
       if (state.favs && !(meta[i].vid && favSet[meta[i].vid])) continue;
+      if (state.facet>=0 && it[1]!==state.facet) continue;
       if (terms.length){
         var h = meta[i].hay, ok = true;
         for (var t=0;t<terms.length;t++){ if (h.indexOf(terms[t])===-1){ ok=false; break; } }
@@ -899,10 +909,50 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     updateCrumb();
     updateCount();
     renderPostits();
+    renderFacets(terms);
     renderJumps();
     renderChunk();
     writeHash();
   }
+
+  var facetbar = document.getElementById('facetbar');
+  function renderFacets(terms){
+    // only meaningful during a search that isn't already pinned to one section
+    if (!terms.length || state.sec>=0){ facetbar.classList.remove('show'); facetbar.innerHTML=''; return; }
+    var counts = {};
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+      if (state.col>=0 && it[0]!==state.col) continue;
+      if (state.picks && !(it[6]&1)) continue;
+      if (state.fresh && !(it[6]&4)) continue;
+      if (state.favs && !(meta[i].vid && favSet[meta[i].vid])) continue;
+      var h = meta[i].hay, ok = true;
+      for (var t=0;t<terms.length;t++){ if (h.indexOf(terms[t])===-1){ ok=false; break; } }
+      if (!ok) continue;
+      counts[it[1]] = (counts[it[1]] || 0) + 1;
+    }
+    var secList = Object.keys(counts).map(Number).sort(function(a,b){ return counts[b]-counts[a]; });
+    if (secList.length < 2){ facetbar.classList.remove('show'); facetbar.innerHTML=''; return; }
+    var total = secList.reduce(function(a,s){ return a+counts[s]; }, 0);
+    var html = '<span class="facetlbl">In</span>' +
+      '<button class="facetchip'+(state.facet<0?' active':'')+'" data-facet="-1">All<span class="fc">'+total+'</span></button>';
+    secList.slice(0, 24).forEach(function(si){
+      var c = cols[secs[si].c];
+      html += '<button class="facetchip'+(state.facet===si?' active':'')+'" data-facet="'+si+'">'+
+        '<span class="code" style="color:'+c.color+'">'+c.code+'</span>'+esc(tc(secs[si].n))+'<span class="fc">'+counts[si]+'</span></button>';
+    });
+    facetbar.innerHTML = html;
+    facetbar.classList.add('show');
+    Array.prototype.forEach.call(facetbar.querySelectorAll('.facetchip'), function(el,i){
+      el.classList.add('enter'); el.style.animationDelay = Math.min(i*24,360)+'ms';
+    });
+  }
+  facetbar.addEventListener('click', function(e){
+    var chip = e.target.closest('.facetchip');
+    if (!chip) return;
+    state.facet = +chip.dataset.facet;
+    applyFilter();
+  });
 
   var grid = document.getElementById('grid');
   var crumb = document.getElementById('crumb');
@@ -1171,6 +1221,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     clearTimeout(deb);
     deb = setTimeout(function(){
       state.q = searchEl.value;
+      state.facet = -1;
       if (state.q.trim()) tipsOff();
       applyFilter();
     }, 120);
@@ -1240,7 +1291,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       } else {
         drawerList.querySelectorAll('.drawer.open').forEach(function(d){ if(d!==drawer) d.classList.remove('open'); });
         drawer.classList.add('open');
-        state.col = ci; state.sec = -1; state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null;
+        state.col = ci; state.sec = -1; state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null; state.facet = -1;
         syncNav(); applyFilter();
       }
     } else if (e.target.closest('.grp-head')){
@@ -1281,7 +1332,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       tipsOff();
       state.col = +secBtn.dataset.col;
       state.sec = (state.sec === +secBtn.dataset.sec) ? -1 : +secBtn.dataset.sec;
-      state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null;
+      state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null; state.facet = -1;
       syncNav(); applyFilter();
       maybeCloseMobile();
       scrollToResults();
@@ -1289,7 +1340,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   });
 
   function reset(){
-    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, sort:'featured'};
+    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, facet:-1, sort:'featured'};
     searchEl.value = '';
     picksBtn.setAttribute('aria-pressed','false');
     newBtn.setAttribute('aria-pressed','false');
