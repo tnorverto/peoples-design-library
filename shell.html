@@ -256,11 +256,13 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .preview .plabel .st{color:var(--ink-faint)}
 
 /* ---------- Account & favorites ---------- */
-.fav-hero{position:relative;display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border:none;background:none;cursor:pointer;padding:0}
-.fav-hero svg{width:42px;height:42px;fill:none;stroke:#EAF1EF;stroke-width:1.6;transition:transform .18s cubic-bezier(.3,1.8,.5,1),fill .18s,stroke .18s}
-.fav-hero:hover svg{transform:scale(1.1);stroke:#E0705A}
+.fav-hero{position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;padding:9px 0;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);cursor:pointer;transition:border-color .15s}
+.fav-hero:hover{border-color:#E0705A}
+.fav-hero svg{width:17px;height:17px;fill:none;stroke:var(--ink-soft);stroke-width:1.8;transition:transform .18s cubic-bezier(.3,1.8,.5,1),fill .18s,stroke .18s}
+.fav-hero:hover svg{transform:scale(1.12);stroke:#E0705A}
+.fav-hero.on{border-color:#E0705A}
 .fav-hero.on svg{fill:#E0705A;stroke:#E0705A}
-.fav-hero .fav-count{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E0705A;color:#fff;font-family:var(--font-mono);font-size:10px;line-height:16px;text-align:center}
+.fav-hero .fav-count{position:absolute;top:-6px;right:-6px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:#E0705A;color:#fff;font-family:var(--font-mono);font-size:9px;line-height:15px;text-align:center}
 .auth-btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;color:#EAF1EF;border:1px solid rgba(234,241,239,.35);border-radius:999px;padding:5px 12px;cursor:pointer;background:none;transition:border-color .15s}
 .auth-btn:hover{border-color:#8FD0C6;color:#8FD0C6}
 .auth-user{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:#C6D8D4}
@@ -396,7 +398,6 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       </div>
       <div class="mast-actions-right">
         <span id="songSlot"></span>
-        <span id="favBtnSlot"></span>
       </div>
     </div>
   </div>
@@ -417,6 +418,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       <option value="useful">Sort: Community Upvotes</option>
     </select>
     <button class="theme-btn" id="surpriseBtn" aria-label="Surprise me" title="Surprise me — open a random resource">🎲</button>
+    <span id="favBtnSlot"></span>
     <button class="song-btn" id="songBtn" aria-label="Random song" title="Play a random track from the Music section" style="display:none">
       <svg viewBox="0 0 40 40" class="vinyl" aria-hidden="true">
         <defs><radialGradient id="vg" cx="50%" cy="50%" r="50%">

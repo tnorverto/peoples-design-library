@@ -33,6 +33,8 @@ SECTION_RENAME = {
     "PERSONAL RECCOMENDATIONS ⬇️⬇️⬇️": "PERSONAL RECOMMENDATIONS",
 }
 
+EXCLUDE_SECTIONS = {"UNETHICAL TOOLS"}   # never published to the site
+
 FIRE = re.compile("\U0001F525+")
 PIRATE = re.compile("\U0001F3F4\u200d\u2620\ufe0f|\u200d")
 WS = re.compile(r"\s+")
@@ -216,6 +218,11 @@ def parse_sheet(col_i, html):
     def is_bold(td):
         cls = (td.get("class") or [None])[0]
         return "font-weight:bold" in css.get(cls or "", "")
+
+    def has_border_bottom(td):
+        # the curator underlines column headers; artist/tool links never carry this border
+        cls = (td.get("class") or [None])[0]
+        return "border-bottom" in css.get(cls or "", "")
 
     soup = BeautifulSoup(html, "lxml")
     table = soup.find("table") or soup
@@ -412,6 +419,26 @@ def parse_sheet(col_i, html):
                     st["links"].append([clean_text(a.get_text(" ", strip=True)) or domain(a["href"]), a["href"].strip()])
                 continue
 
+        # ---- bold "Genre:" sub-header that happens to carry a link (e.g. a genre playlist).
+        # Without this, the whole cell reads as an item and the column keeps the STALE header,
+        # so everything below inherits the wrong sub (Reggae artists filed under Soul, etc.).
+        # A tool with a description ("Type Trials - Test your font:") is not a header, hence " - ".
+        _t = text.rstrip()
+        if (col_i != 4                                   # TUTORIALS has its own column layout
+                and is_bold(td) and has_border_bottom(td)
+                and td.find("a", href=True) and len(text) < 45
+                and " - " not in text
+                and (_t.endswith(":") or ":" not in _t)):  # "Label: link" cells are items, not headers
+            head_txt = clean_text(text).rstrip(":").strip()
+            if head_txt:
+                for c in cols:
+                    col_sub[c] = head_txt
+                sec_h = col_section.get(ci) or col_section.get("_global") or "General"
+                for a in td.find_all("a"):
+                    if good_href(a.get("href")):
+                        entries.append((sec_h, head_txt, head_txt, a["href"].strip(), "", 0, [], ri))
+                continue
+
         # ---- link cells → entries
         anchors = [a for a in td.find_all("a") if good_href(a.get("href"))]
         if anchors:
@@ -520,6 +547,8 @@ def build(src):
         all_tips.extend(tips)
         n0 = len(items)
         for sec, sub, name, url, note, pir, *rest in entries:
+            if (sec or "").strip().upper() in EXCLUDE_SECTIONS:
+                continue
             alts = rest[0] if rest else []
             entry_row = rest[1] if len(rest) > 1 else None
             key = (col_i, sec)
@@ -630,6 +659,8 @@ def build(src):
 
     tip_rows, by_title, by_ctx = [], 0, 0
     for t in all_tips:
+        if (t.get("ctx_sec") or "").strip().upper() in EXCLUDE_SECTIONS or (t.get("t") or "").strip().upper() in EXCLUDE_SECTIONS:
+            continue
         si, sub, hit = match_target(t)
         if hit:
             by_title += 1
