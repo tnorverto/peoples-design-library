@@ -297,7 +297,7 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .pl-time{margin-left:8px}
 .pl-fav.on{color:#E0705A;border-color:rgba(224,112,90,.6)}
 .pl-shuf{opacity:.4}
-.pl-shuf.on{opacity:1;border-color:rgba(201,160,58,.65);background:rgba(201,160,58,.12)}
+.pl-shuf.on{opacity:1;color:#C9A03A;border-color:rgba(201,160,58,.65);background:rgba(201,160,58,.12)}
 body.playing{padding-bottom:96px}
 @media (max-width:760px){.pl-video{width:76px;height:44px}.pl-yt{display:none}.player{gap:9px;padding:8px 10px}.pl-btn{width:34px;height:34px}}
 .playbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:var(--teal);border:1px solid var(--line-strong);background:var(--paper);font-size:9px;cursor:pointer;transition:transform .15s,border-color .15s}
@@ -526,7 +526,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   <div class="pl-ctrl">
     <button class="pl-btn" id="plPrev" aria-label="Previous track" title="Previous">⏮</button>
     <button class="pl-btn" id="plNext" aria-label="Next track" title="Shuffle next">⏭</button>
-    <button class="pl-btn pl-shuf" id="plShuf" aria-label="Toggle shuffle" aria-pressed="true" style="display:none">🔀</button>
+    <button class="pl-btn pl-shuf" id="plShuf" aria-label="Toggle shuffle" aria-pressed="true" style="display:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
     <button class="pl-btn pl-fav" id="plFav" aria-label="Save to my favorites" title="Save to my favorites" style="display:none">♡</button>
   </div>
   <a class="pl-yt" id="plYT" href="#" target="_blank" rel="noopener">Open on YouTube ↗</a>
