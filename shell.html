@@ -1264,6 +1264,10 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
         a = document.createElement('a');
         a.className = 'card' + (it[6]&1 ? ' picked' : '');
         a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        if (it[1]===MUSIC_SEC && ytId(it[4])){
+          a.dataset.play = idx;
+          a.title = 'Play here — Ctrl+click to open on YouTube';
+        }
       }
       a.style.setProperty('--cc', cols[it[0]].color);
       var path = esc(tc(secs[it[1]].n)) + (it[2] ? '<span class="sep">›</span>' + esc(tc(it[2])) : '');
@@ -1679,9 +1683,19 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   });
   grid.addEventListener('click', function(e){
     var pb = e.target.closest('.playbtn');
-    if (!pb) return;
-    e.preventDefault(); e.stopPropagation();
-    playTrack(+pb.dataset.i);
+    if (pb){
+      e.preventDefault(); e.stopPropagation();
+      playTrack(+pb.dataset.i);
+      return;
+    }
+    // whole playable music card plays in-site; modified clicks keep normal link behavior
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    if (e.target.closest('.altbtn,.altlinks,.favb,.vote')) return;
+    var card = e.target.closest('.card');
+    if (card && card.dataset.play !== undefined){
+      e.preventDefault();
+      playTrack(+card.dataset.play);
+    }
   });
 
   // ---- Random song (from the Music sections) ----
