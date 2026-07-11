@@ -296,6 +296,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .pl-genre-btn:hover{color:#fff}
 .pl-time{margin-left:8px}
 .pl-fav.on{color:#E0705A;border-color:rgba(224,112,90,.6)}
+.pl-shuf{opacity:.4}
+.pl-shuf.on{opacity:1;border-color:rgba(201,160,58,.65);background:rgba(201,160,58,.12)}
 body.playing{padding-bottom:96px}
 @media (max-width:760px){.pl-video{width:76px;height:44px}.pl-yt{display:none}.player{gap:9px;padding:8px 10px}.pl-btn{width:34px;height:34px}}
 .playbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:var(--teal);border:1px solid var(--line-strong);background:var(--paper);font-size:9px;cursor:pointer;transition:transform .15s,border-color .15s}
@@ -524,6 +526,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   <div class="pl-ctrl">
     <button class="pl-btn" id="plPrev" aria-label="Previous track" title="Previous">⏮</button>
     <button class="pl-btn" id="plNext" aria-label="Next track" title="Shuffle next">⏭</button>
+    <button class="pl-btn pl-shuf" id="plShuf" aria-label="Toggle shuffle" aria-pressed="true" style="display:none">🔀</button>
     <button class="pl-btn pl-fav" id="plFav" aria-label="Save to my favorites" title="Save to my favorites" style="display:none">♡</button>
   </div>
   <a class="pl-yt" id="plYT" href="#" target="_blank" rel="noopener">Open on YouTube ↗</a>
@@ -1661,6 +1664,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   var playerEl = document.getElementById('player');
   var yt = null, ytReady = false, pending = null, curIdx = -1, hist = [], hpos = -1;
   var pendingListVid = null, plActive = false;   // playlist mode: cue list, then jump to the linked song
+  var vinylMode = false, shufOn = true, pendingListAdvance = false;   // vinyl-button shuffle toggle
 
   function loadYT(){
     if (document.getElementById('ytapi')) return;
@@ -1684,7 +1688,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
             var ix = pl.indexOf(pendingListVid);
             if (ix < 0) return;   // stale CUED from a superseded playlist — wait for the right one
             pendingListVid = null;
-            yt.playVideoAt(ix);
+            var adv = pendingListAdvance; pendingListAdvance = false;
+            yt.playVideoAt(adv ? (ix + 1) % pl.length : ix);
             return;
           }
           if (e.data === YT.PlayerState.ENDED) nextTrack();
@@ -1710,6 +1715,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     var it = items[i], id = ytId(it[4]);
     if (!id){ window.open(it[4], '_blank', 'noopener'); return; }
     curIdx = i;
+    vinylMode = !!single;   // only vinyl/shuffle plays are single-song
+    updateShufBtn();
     playerEl.classList.add('on');
     document.body.classList.add('playing');
     document.getElementById('plName').textContent = it[3];
@@ -1750,14 +1757,40 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     playTrack(pick, true);
   }
   function nextTrack(){
-    if (plActive && yt && yt.getPlaylist){
+    if (plActive && yt && yt.getPlaylist && !(vinylMode && shufOn)){   // shuffle re-enabled overrides playlist continuation
       var pl = yt.getPlaylist() || [];
       var ix = yt.getPlaylistIndex ? yt.getPlaylistIndex() : -1;
       if (pl.length && ix > -1 && ix < pl.length - 1){ yt.nextVideo(); return; }
+      if (vinylMode && !shufOn) return;   // playlist finished with shuffle off — stop, don't go random
+    }
+    if (vinylMode && !shufOn){
+      enterCurrentPlaylist();   // no playlist on this song -> false: stop rather than go random
+      return;
     }
     if (hpos < hist.length - 1){ hpos++; var h = hist[hpos]; playIndex(h.i, h.s); return; }
     shuffleNext();
   }
+  // Shuffle off in vinyl mode: switch to the current song's own YouTube playlist,
+  // continuing from the entry after the song that just played.
+  function enterCurrentPlaylist(){
+    if (curIdx < 0 || !yt || !yt.cuePlaylist) return false;
+    var lid = ytList(items[curIdx][4]);
+    if (!lid) return false;
+    plActive = true;
+    pendingListVid = ytId(items[curIdx][4]);
+    pendingListAdvance = true;
+    yt.cuePlaylist({listType: 'playlist', list: lid});
+    return true;
+  }
+  var plShufBtn = document.getElementById('plShuf');
+  function updateShufBtn(){
+    plShufBtn.style.display = vinylMode ? '' : 'none';
+    plShufBtn.classList.toggle('on', shufOn);
+    plShufBtn.setAttribute('aria-pressed', String(shufOn));
+    plShufBtn.title = shufOn ? 'Shuffle on — next is a random song from the library' : 'Shuffle off — next continues this song’s playlist';
+    document.getElementById('plNext').title = (vinylMode && !shufOn) ? 'Next in playlist' : 'Shuffle next';
+  }
+  plShufBtn.addEventListener('click', function(){ shufOn = !shufOn; updateShufBtn(); });
   function prevTrack(){
     if (plActive && yt && yt.getPlaylistIndex && yt.getPlaylistIndex() > 0){ yt.previousVideo(); return; }
     if (hpos > 0){ hpos--; var h = hist[hpos]; playIndex(h.i, h.s); }
@@ -1878,7 +1911,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     var slot = document.getElementById('songSlot');
     if (slot){ slot.appendChild(sb); }
     sb.style.display = '';
-    sb.addEventListener('click', function(){ shuffleNext(); });
+    sb.addEventListener('click', function(){ shufOn = true; shuffleNext(); });   // vinyl always starts with shuffle on
   })();
 
   // ---- Masthead living gradient (ShaderGradient-inspired, raw WebGL, ~2KB) ----
