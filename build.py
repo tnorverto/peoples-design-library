@@ -238,6 +238,17 @@ def parse_sheet(col_i, html):
     ctx = []                  # (row, section, sub) of main-column links, for spatial tip matching
     col_section = {}          # col -> section name
     col_sub = {}              # col -> subheader
+    global_hdr = None         # last full-width header: cells right of it on ITS OWN ROW keep the old sections
+
+    def cur_section(ri, ci):
+        if global_hdr and ri == global_hdr["row"] and ci > global_hdr["end"]:
+            return global_hdr["prev"].get(ci) or global_hdr["prev"].get("_global") or "General"
+        return col_section.get(ci) or col_section.get("_global") or "General"
+
+    def cur_sub(ri, ci):
+        if global_hdr and ri == global_hdr["row"] and ci > global_hdr["end"]:
+            return global_hdr["prev_sub"].get(ci)
+        return col_sub.get(ci)
     tip_state = {}            # col -> {"title","body","links","last"}
     kw = None                 # active keyword-library zone
     bz = None                 # active furnishing-brands zone
@@ -278,6 +289,8 @@ def parse_sheet(col_i, html):
                 if c in cols or (span >= 3 and ci <= 3):
                     close_tip(c)
             if span >= 3 and ci <= 3:          # full-width: applies everywhere
+                global_hdr = {"row": ri, "end": ci + span - 1,
+                              "prev": dict(col_section), "prev_sub": dict(col_sub)}
                 col_section = {c: section for c in set(list(col_section) + list(cols))}
                 col_section["_global"] = section
                 col_sub = {}
@@ -433,7 +446,7 @@ def parse_sheet(col_i, html):
             if head_txt:
                 for c in cols:
                     col_sub[c] = head_txt
-                sec_h = col_section.get(ci) or col_section.get("_global") or "General"
+                sec_h = cur_section(ri, ci)
                 for a in td.find_all("a"):
                     if good_href(a.get("href")):
                         entries.append((sec_h, head_txt, head_txt, a["href"].strip(), "", 0, [], ri))
@@ -442,8 +455,8 @@ def parse_sheet(col_i, html):
         # ---- link cells → entries
         anchors = [a for a in td.find_all("a") if good_href(a.get("href"))]
         if anchors:
-            sec = col_section.get(ci) or col_section.get("_global") or "General"
-            sub = col_sub.get(ci)
+            sec = cur_section(ri, ci)
+            sub = cur_sub(ri, ci)
             if ci <= 4:
                 ctx.append((ri, sec, sub or ""))
             raw = td.get_text(" ", strip=True)

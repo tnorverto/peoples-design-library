@@ -281,6 +281,7 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .pl-video iframe{width:100%;height:100%;border:0;display:block}
 .pl-meta{flex:1;min-width:0}
 .pl-name{font-family:var(--font-display);font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-song{font-family:var(--font-mono);font-weight:400;font-size:11.5px;color:#9FC1BC;margin-left:8px}
 .pl-genre{font-family:var(--font-mono);font-size:11px;color:#9FC1BC;margin-top:2px}
 .pl-ctrl{display:flex;gap:6px;flex:none}
 .pl-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;border:1px solid rgba(234,241,239,.3);background:none;color:#EAF1EF;font-size:14px;cursor:pointer;transition:border-color .15s,background .15s}
@@ -502,7 +503,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   <div class="pl-seek" id="plSeek" title="Seek" aria-hidden="true"><div class="pl-elapsed" id="plElapsed"></div></div>
   <div class="pl-video"><div id="ytFrame"></div></div>
   <button class="pl-btn pl-play" id="plPlay" aria-label="Play or pause">▶</button>
-  <div class="pl-meta"><div class="pl-name" id="plName"></div><div class="pl-genre"><button class="pl-genre-btn" id="plGenre" type="button" title="Show this genre in the library"></button><span class="pl-time" id="plTime" aria-hidden="true"></span></div></div>
+  <div class="pl-meta"><div class="pl-name"><span id="plName"></span><span class="pl-song" id="plSong"></span></div><div class="pl-genre"><button class="pl-genre-btn" id="plGenre" type="button" title="Show this genre in the library"></button><span class="pl-time" id="plTime" aria-hidden="true"></span></div></div>
   <div class="pl-ctrl">
     <button class="pl-btn" id="plPrev" aria-label="Previous track" title="Previous">⏮</button>
     <button class="pl-btn" id="plNext" aria-label="Next track" title="Shuffle next">⏭</button>
@@ -732,6 +733,13 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
             u.match(/youtube\.com\/embed\/([\w-]{11})/) || u.match(/youtube\.com\/shorts\/([\w-]{11})/) ||
             u.match(/youtube\.com\/live\/([\w-]{11})/);
     return m ? m[1] : null;
+  }
+  function ytList(u){
+    if (!u) return null;
+    var m = u.match(/[?&]list=([\w-]{10,})/);
+    if (!m) return null;
+    if (/^RD/.test(m[1])) return null;   // auto-generated mixes can't be embedded
+    return m[1];
   }
   var musicPool = [];
   for (var mpi = 0; mpi < items.length; mpi++){
@@ -1445,8 +1453,12 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       state.sec = (state.sec === +secBtn.dataset.sec) ? -1 : +secBtn.dataset.sec;
       state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null; state.facet = -1; state.facetSub = '';
       syncNav(); applyFilter();
-      maybeCloseMobile();
-      scrollToResults();
+      // on mobile, keep the menu open when the section has subcategories so they can be picked
+      var subList = state.sec >= 0 && drawerList.querySelector('.blk-list[data-sec="' + state.sec + '"]');
+      if (!subList || window.innerWidth > 900){
+        maybeCloseMobile();
+        scrollToResults();
+      }
     }
   });
 
@@ -1616,6 +1628,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   // an ad blocker get ads stripped by their own browser — their choice, not something we do.
   var playerEl = document.getElementById('player');
   var yt = null, ytReady = false, pending = null, curIdx = -1, hist = [], hpos = -1;
+  var pendingListVid = null, plActive = false;   // playlist mode: cue list, then jump to the linked song
 
   function loadYT(){
     if (document.getElementById('ytapi')) return;
@@ -1634,7 +1647,16 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
           if (pending !== null){ var p = pending; pending = null; playIndex(p); }
         },
         onStateChange: function(e){
+          if (e.data === YT.PlayerState.CUED && pendingListVid){
+            var pl = yt.getPlaylist() || [];
+            var ix = pl.indexOf(pendingListVid);
+            if (ix < 0) return;   // stale CUED from a superseded playlist — wait for the right one
+            pendingListVid = null;
+            yt.playVideoAt(ix);
+            return;
+          }
           if (e.data === YT.PlayerState.ENDED) nextTrack();
+          if (e.data === YT.PlayerState.PLAYING) updateSongTitle();
           syncPlayBtn(e.data === YT.PlayerState.PLAYING);
         }
       }
@@ -1659,6 +1681,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     playerEl.classList.add('on');
     document.body.classList.add('playing');
     document.getElementById('plName').textContent = it[3];
+    document.getElementById('plSong').textContent = '';
     document.getElementById('plGenre').textContent = it[2] ? tc(it[2]) : 'Music';
     document.getElementById('plYT').href = it[4];
     document.getElementById('plElapsed').style.width = '0';
@@ -1666,7 +1689,22 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     updatePlFav();
     markNowPlaying();
     if (!ytReady || !yt || !yt.loadVideoById){ pending = i; loadYT(); return; }
-    yt.loadVideoById(id);
+    var lid = ytList(it[4]);
+    if (lid){
+      plActive = true; pendingListVid = id;
+      yt.cuePlaylist({listType: 'playlist', list: lid});
+    } else {
+      plActive = false; pendingListVid = null;
+      yt.loadVideoById(id);
+    }
+  }
+  function updateSongTitle(){
+    var el = document.getElementById('plSong');
+    if (!yt || !yt.getVideoData || curIdx < 0){ el.textContent = ''; return; }
+    var vd = yt.getVideoData() || {};
+    var t = vd.title || '';
+    var main = items[curIdx][3] || '';
+    el.textContent = (t && t.toLowerCase() !== main.toLowerCase()) ? t : '';
   }
   function playTrack(i){
     hist = hist.slice(0, hpos + 1);
@@ -1674,13 +1712,21 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     playIndex(i);
   }
   function nextTrack(){
+    if (plActive && yt && yt.getPlaylist){
+      var pl = yt.getPlaylist() || [];
+      var ix = yt.getPlaylistIndex ? yt.getPlaylistIndex() : -1;
+      if (pl.length && ix > -1 && ix < pl.length - 1){ yt.nextVideo(); return; }
+    }
     if (hpos < hist.length - 1){ hpos++; playIndex(hist[hpos]); return; }
     if (!musicPool.length) return;
     var pick, guard = 0;
     do { pick = musicPool[Math.floor(Math.random() * musicPool.length)]; } while (pick === curIdx && ++guard < 8);
     playTrack(pick);
   }
-  function prevTrack(){ if (hpos > 0){ hpos--; playIndex(hist[hpos]); } }
+  function prevTrack(){
+    if (plActive && yt && yt.getPlaylistIndex && yt.getPlaylistIndex() > 0){ yt.previousVideo(); return; }
+    if (hpos > 0){ hpos--; playIndex(hist[hpos]); }
+  }
 
   document.getElementById('plNext').addEventListener('click', nextTrack);
   document.getElementById('plPrev').addEventListener('click', prevTrack);
@@ -1689,6 +1735,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (yt.getPlayerState() === 1) yt.pauseVideo(); else yt.playVideo();
   });
   document.getElementById('plClose').addEventListener('click', function(){
+    pending = null; pendingListVid = null; plActive = false;
     if (yt && yt.stopVideo) yt.stopVideo();
     playerEl.classList.remove('on');
     document.body.classList.remove('playing');
