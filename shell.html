@@ -288,6 +288,13 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .pl-yt{flex:none;font-family:var(--font-mono);font-size:11px;color:#9FC1BC;text-decoration:none;border-bottom:1px dotted #9FC1BC;white-space:nowrap}
 .pl-yt:hover{color:#fff}
 .pl-close{border-color:transparent}
+.pl-seek{position:absolute;top:-2px;left:0;right:0;height:6px;cursor:pointer;background:rgba(234,241,239,.15);transition:height .15s;touch-action:none}
+.pl-seek:hover{height:11px}
+.pl-elapsed{height:100%;width:0;background:#C9A03A;pointer-events:none}
+.pl-genre-btn{background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;border-bottom:1px dotted #9FC1BC}
+.pl-genre-btn:hover{color:#fff}
+.pl-time{margin-left:8px}
+.pl-fav.on{color:#E0705A;border-color:rgba(224,112,90,.6)}
 body.playing{padding-bottom:96px}
 @media (max-width:760px){.pl-video{width:76px;height:44px}.pl-yt{display:none}.player{gap:9px;padding:8px 10px}.pl-btn{width:34px;height:34px}}
 .playbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:var(--teal);border:1px solid var(--line-strong);background:var(--paper);font-size:9px;cursor:pointer;transition:transform .15s,border-color .15s}
@@ -492,12 +499,14 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 </div>
 
 <div class="player" id="player" aria-live="polite">
+  <div class="pl-seek" id="plSeek" title="Seek" aria-hidden="true"><div class="pl-elapsed" id="plElapsed"></div></div>
   <div class="pl-video"><div id="ytFrame"></div></div>
   <button class="pl-btn pl-play" id="plPlay" aria-label="Play or pause">▶</button>
-  <div class="pl-meta"><div class="pl-name" id="plName"></div><div class="pl-genre" id="plGenre"></div></div>
+  <div class="pl-meta"><div class="pl-name" id="plName"></div><div class="pl-genre"><button class="pl-genre-btn" id="plGenre" type="button" title="Show this genre in the library"></button><span class="pl-time" id="plTime" aria-hidden="true"></span></div></div>
   <div class="pl-ctrl">
     <button class="pl-btn" id="plPrev" aria-label="Previous track" title="Previous">⏮</button>
     <button class="pl-btn" id="plNext" aria-label="Next track" title="Shuffle next">⏭</button>
+    <button class="pl-btn pl-fav" id="plFav" aria-label="Save to my favorites" title="Save to my favorites" style="display:none">♡</button>
   </div>
   <a class="pl-yt" id="plYT" href="#" target="_blank" rel="noopener">Open on YouTube ↗</a>
   <button class="pl-btn pl-close" id="plClose" aria-label="Close player" title="Close">✕</button>
@@ -612,6 +621,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       b.textContent = on ? '\u2764' : '\u2661';
       b.title = user ? (on ? 'Remove from my favorites' : 'Save to my favorites') : 'Sign in to save favorites';
     });
+    updatePlFav();
   }
   function toggleFav(btn){
     if (!user){ signIn(); return; }
@@ -1651,6 +1661,9 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     document.getElementById('plName').textContent = it[3];
     document.getElementById('plGenre').textContent = it[2] ? tc(it[2]) : 'Music';
     document.getElementById('plYT').href = it[4];
+    document.getElementById('plElapsed').style.width = '0';
+    document.getElementById('plTime').textContent = '';
+    updatePlFav();
     markNowPlaying();
     if (!ytReady || !yt || !yt.loadVideoById){ pending = i; loadYT(); return; }
     yt.loadVideoById(id);
@@ -1680,6 +1693,84 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     playerEl.classList.remove('on');
     document.body.classList.remove('playing');
     curIdx = -1; markNowPlaying(); syncPlayBtn(false);
+    document.getElementById('plElapsed').style.width = '0';
+    document.getElementById('plTime').textContent = '';
+  });
+
+  // ---- Player seek bar ----
+  var plSeekEl = document.getElementById('plSeek');
+  var plElapsedEl = document.getElementById('plElapsed');
+  var plTimeEl = document.getElementById('plTime');
+  function fmtTime(s){
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60), r = s % 60, h = Math.floor(m / 60);
+    m = m % 60;
+    return (h ? h + ':' + String(m).padStart(2,'0') : m) + ':' + String(r).padStart(2,'0');
+  }
+  var plScrubbing = false;
+  function syncSeek(){
+    if (plScrubbing || !yt || !yt.getDuration || !playerEl.classList.contains('on')) return;
+    var d = yt.getDuration() || 0;
+    var t = yt.getCurrentTime ? (yt.getCurrentTime() || 0) : 0;
+    plElapsedEl.style.width = d ? Math.min(100, t / d * 100) + '%' : '0';
+    plTimeEl.textContent = d ? fmtTime(t) + ' / ' + fmtTime(d) : '';
+  }
+  setInterval(syncSeek, 500);
+  function seekToEvent(e, commit){
+    if (!yt || !yt.getDuration) return;
+    var d = yt.getDuration();
+    if (!d) return;
+    var r = plSeekEl.getBoundingClientRect();
+    var f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    plElapsedEl.style.width = (f * 100) + '%';
+    plTimeEl.textContent = fmtTime(f * d) + ' / ' + fmtTime(d);
+    if (commit && yt.seekTo) yt.seekTo(f * d, true);
+  }
+  plSeekEl.addEventListener('pointerdown', function(e){
+    plScrubbing = true;
+    try { plSeekEl.setPointerCapture(e.pointerId); } catch(err){}
+    seekToEvent(e, false);
+  });
+  plSeekEl.addEventListener('pointermove', function(e){ if (plScrubbing) seekToEvent(e, false); });
+  plSeekEl.addEventListener('pointerup', function(e){
+    if (!plScrubbing) return;
+    plScrubbing = false;
+    seekToEvent(e, true);
+  });
+  plSeekEl.addEventListener('pointercancel', function(){ plScrubbing = false; });
+
+  // ---- Player heart (favorites) ----
+  function updatePlFav(){
+    var b = document.getElementById('plFav');
+    if (!b) return;
+    if (!FIREBASE || curIdx < 0 || !items[curIdx][4]){ b.style.display = 'none'; return; }
+    b.style.display = '';
+    var vid = voteId(items[curIdx][4]);
+    b.dataset.vid = vid;
+    var on = !!favSet[vid];
+    b.classList.toggle('on', on);
+    b.textContent = on ? '❤' : '♡';
+    b.title = user ? (on ? 'Remove from my favorites' : 'Save to my favorites') : 'Sign in to save favorites';
+  }
+  document.getElementById('plFav').addEventListener('click', function(){
+    if (curIdx < 0) return;
+    toggleFav(this);   // refreshFavEls inside keeps this button in sync
+  });
+
+  // ---- Player genre -> open that section + genre in the library ----
+  document.getElementById('plGenre').addEventListener('click', function(){
+    if (curIdx < 0) return;
+    var it = items[curIdx];
+    tipsOff();
+    state.col = it[0]; state.sec = it[1];
+    state.sub = it[2] || ''; state.blk = '';
+    state.grp = null; state.grpKey = null;
+    state.facet = -1; state.facetSub = '';
+    drawerList.querySelectorAll('.drawer.open').forEach(function(d){ d.classList.remove('open'); });
+    var dr = drawerList.children[it[0]];
+    if (dr) dr.classList.add('open');
+    syncNav(); applyFilter();
+    scrollToResults();
   });
   grid.addEventListener('click', function(e){
     var pb = e.target.closest('.playbtn');
