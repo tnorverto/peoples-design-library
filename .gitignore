@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+index.html
+export.zip
+sheet_export.zip
+dead-links-report.md
+.DS_Store
+Thumbs.db
