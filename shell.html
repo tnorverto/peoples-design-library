@@ -1644,7 +1644,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       events: {
         onReady: function(){
           ytReady = true;
-          if (pending !== null){ var p = pending; pending = null; playIndex(p); }
+          if (pending !== null){ var p = pending; pending = null; playIndex(p.i, p.s); }
         },
         onStateChange: function(e){
           if (e.data === YT.PlayerState.CUED && pendingListVid){
@@ -1674,7 +1674,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     var u = items[curIdx][4];
     grid.querySelectorAll('.card').forEach(function(c){ if (c.dataset.url === u) c.classList.add('nowplaying'); });
   }
-  function playIndex(i){
+  function playIndex(i, single){
     var it = items[i], id = ytId(it[4]);
     if (!id){ window.open(it[4], '_blank', 'noopener'); return; }
     curIdx = i;
@@ -1688,8 +1688,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     document.getElementById('plTime').textContent = '';
     updatePlFav();
     markNowPlaying();
-    if (!ytReady || !yt || !yt.loadVideoById){ pending = i; loadYT(); return; }
-    var lid = ytList(it[4]);
+    if (!ytReady || !yt || !yt.loadVideoById){ pending = {i: i, s: !!single}; loadYT(); return; }
+    var lid = single ? null : ytList(it[4]);   // shuffle plays stay single-song
     if (lid){
       plActive = true; pendingListVid = id;
       yt.cuePlaylist({listType: 'playlist', list: lid});
@@ -1706,10 +1706,16 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     var main = items[curIdx][3] || '';
     el.textContent = (t && t.toLowerCase() !== main.toLowerCase()) ? t : '';
   }
-  function playTrack(i){
+  function playTrack(i, single){
     hist = hist.slice(0, hpos + 1);
-    hist.push(i); hpos = hist.length - 1;
-    playIndex(i);
+    hist.push({i: i, s: !!single}); hpos = hist.length - 1;
+    playIndex(i, single);
+  }
+  function shuffleNext(){
+    if (!musicPool.length) return;
+    var pick, guard = 0;
+    do { pick = musicPool[Math.floor(Math.random() * musicPool.length)]; } while (pick === curIdx && ++guard < 8);
+    playTrack(pick, true);
   }
   function nextTrack(){
     if (plActive && yt && yt.getPlaylist){
@@ -1717,15 +1723,12 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       var ix = yt.getPlaylistIndex ? yt.getPlaylistIndex() : -1;
       if (pl.length && ix > -1 && ix < pl.length - 1){ yt.nextVideo(); return; }
     }
-    if (hpos < hist.length - 1){ hpos++; playIndex(hist[hpos]); return; }
-    if (!musicPool.length) return;
-    var pick, guard = 0;
-    do { pick = musicPool[Math.floor(Math.random() * musicPool.length)]; } while (pick === curIdx && ++guard < 8);
-    playTrack(pick);
+    if (hpos < hist.length - 1){ hpos++; var h = hist[hpos]; playIndex(h.i, h.s); return; }
+    shuffleNext();
   }
   function prevTrack(){
     if (plActive && yt && yt.getPlaylistIndex && yt.getPlaylistIndex() > 0){ yt.previousVideo(); return; }
-    if (hpos > 0){ hpos--; playIndex(hist[hpos]); }
+    if (hpos > 0){ hpos--; var h = hist[hpos]; playIndex(h.i, h.s); }
   }
 
   document.getElementById('plNext').addEventListener('click', nextTrack);
@@ -1843,7 +1846,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     var slot = document.getElementById('songSlot');
     if (slot){ slot.appendChild(sb); }
     sb.style.display = '';
-    sb.addEventListener('click', function(){ nextTrack(); });
+    sb.addEventListener('click', function(){ shuffleNext(); });
   })();
 
   // ---- Masthead living gradient (ShaderGradient-inspired, raw WebGL, ~2KB) ----
