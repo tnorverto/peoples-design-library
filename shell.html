@@ -320,6 +320,23 @@ body.playing{padding-bottom:96px}
 @media (min-width:1560px){.postit-fab.has{display:none}}
 .postit-fab:hover{transform:rotate(0) scale(1.04)}
 
+/* ---------- World Cup widget ---------- */
+.wc-box{position:fixed;left:22px;bottom:22px;z-index:89;width:264px;background:var(--teal-deep);color:#EAF1EF;border:1px solid #C9A03A;border-radius:6px;box-shadow:0 12px 30px rgba(0,0,0,.4);overflow:hidden;font-family:var(--font-mono)}
+body:has(.player.on) .wc-box{bottom:118px}
+.wc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:9px 12px;background:transparent;border:0;color:#EAF1EF;font-family:var(--font-mono);font-size:11.5px;font-weight:600;letter-spacing:.08em;cursor:pointer}
+.wc-head:hover{background:rgba(255,255,255,.06)}
+.wc-body{padding:0 10px 10px}
+.wc-box.min .wc-body{display:none}
+.wc-scores{display:block;width:100%;height:auto;border-radius:4px;min-height:40px}
+.wc-watch{margin-top:10px;border-top:1px solid rgba(201,160,58,.35);padding-top:8px}
+.wc-watch-label{font-size:10.5px;letter-spacing:.1em;color:#C9A03A;margin-bottom:6px}
+.wc-links{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;align-items:center;justify-items:center}
+.wc-links a{display:block;padding:4px;border-radius:4px}
+.wc-links a:hover{background:rgba(255,255,255,.08)}
+.wc-links img{display:block;height:52px;width:auto}
+.wc-note{grid-column:2;font-size:10px;line-height:1.45;font-weight:600;text-align:center;color:#E0705A}
+@media (max-width:720px){.wc-box{width:236px;left:12px;bottom:12px}}
+
 /* ---------- Tips & Coffee ---------- */
 .coffee-btn{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:10px 18px;background:#C9A03A;color:#241B04;border-radius:3px;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-decoration:none;font-weight:500;transition:transform .12s,box-shadow .12s}
 .coffee-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.25)}
@@ -515,6 +532,21 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 <div class="postits" id="postits"></div>
 <button class="postit-fab" id="postitFab" type="button">💡 <span id="postitFabN"></span> tips</button>
 <div class="preview" id="preview"><img id="previewImg" alt=""><div class="plabel"><span id="previewDom"></span><span class="st" id="previewSt"></span></div></div>
+
+<div class="wc-box" id="wcBox">
+  <button class="wc-head" id="wcHead" type="button" aria-expanded="true">⚽ WORLD CUP 2026 <span id="wcCaret" aria-hidden="true">▾</span></button>
+  <div class="wc-body" id="wcBody">
+    <img class="wc-scores" id="wcScores" src="https://wc26-widget.vercel.app/today?tz=Europe/Rome&amp;theme=dark&amp;bg=12333B" alt="Today's World Cup matches and live scores" loading="lazy" referrerpolicy="no-referrer">
+    <div class="wc-watch">
+      <div class="wc-watch-label">WATCH HERE</div>
+      <div class="wc-links">
+        <a href="https://alangulotv2.su/" target="_blank" rel="noopener nofollow" title="Watch the World Cup"><img src="assets/worldcup2026.png" alt="World Cup 2026 — watch here"></a>
+        <a href="https://brave.com/download/" target="_blank" rel="noopener nofollow" title="Download the Brave browser"><img src="assets/brave.png" alt="Download the Brave browser"></a>
+        <div class="wc-note">↑ IMPORTANT: Use Brave to avoid pop-ups!</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <footer>
   <div class="foot-inner">
@@ -2060,6 +2092,30 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     });
     window.addEventListener('scroll', function(){ pv.style.display='none'; clearTimeout(hoverTimer); clearTimeout(retryTimer); }, {passive:true});
   }
+})();
+</script>
+<script>
+(function(){
+  var box = document.getElementById('wcBox');
+  var head = document.getElementById('wcHead');
+  var caret = document.getElementById('wcCaret');
+  var img = document.getElementById('wcScores');
+  var baseSrc = img.src;
+
+  function setMin(min){
+    box.classList.toggle('min', min);
+    head.setAttribute('aria-expanded', String(!min));
+    caret.textContent = min ? '▸' : '▾';
+  }
+  head.addEventListener('click', function(){ setMin(!box.classList.contains('min')); });
+  // Start collapsed on small screens so it doesn't cover content
+  if (window.matchMedia('(max-width:720px)').matches) setMin(true);
+
+  // Re-fetch the scores image every 3 minutes so live scores stay current
+  setInterval(function(){
+    if (document.visibilityState !== 'visible' || box.classList.contains('min')) return;
+    img.src = baseSrc + '&r=' + Date.now();
+  }, 180000);
 })();
 </script>
 </body>
