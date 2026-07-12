@@ -539,6 +539,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     <select class="picks-toggle" id="sortSel" style="display:none" aria-label="Sort cards">
       <option value="featured">Sort: Featured</option>
       <option value="useful">Sort: Community Upvotes</option>
+      <option value="alpha">Sort: Alphabetical</option>
     </select>
     <button class="theme-btn" id="surpriseBtn" aria-label="Surprise me" title="Surprise me — open a random resource">🎲</button>
     <span id="favBtnSlot"></span>
@@ -1476,11 +1477,13 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       }
       filtered.push(i);
     }
-    // staff picks surface first, everything else keeps catalog order
+    // librarian picks surface first, everything else keeps catalog order
     if (state.sort === 'useful'){
       var vc = filtered.map(function(i){ return [i, meta[i].vid ? (votes[meta[i].vid] || 0) : -1]; });
       vc.sort(function(a, b){ return b[1] - a[1]; });
       filtered = vc.map(function(x){ return x[0]; });
+    } else if (state.sort === 'alpha'){
+      filtered.sort(function(a, b){ return items[a][3].toLowerCase().localeCompare(items[b][3].toLowerCase()); });
     } else {
       var p = [], r = [];
       for (var f=0; f<filtered.length; f++){ (items[filtered[f]][6]&1 ? p : r).push(filtered[f]); }
