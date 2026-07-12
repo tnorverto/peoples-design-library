@@ -447,17 +447,29 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .comfy .pinrow{min-height:0;padding:7px 14px;gap:10px}
 .comfy .pinrow .card-name{font-size:13.5px}
 .rowlist .grid{display:block}
-.rowlist .card{width:100%;min-height:0;margin-bottom:3px;padding:6px 10px;display:flex;flex-direction:row;align-items:center;gap:9px}
+.rowlist .card:not(.xp){width:100%;min-height:0;margin-bottom:3px;padding:6px 10px;display:flex;flex-direction:row;align-items:center;gap:9px}
 .rowlist .card:hover{transform:none}
-.rowlist .thumb,.rowlist .card-note,.rowlist .altlinks,.rowlist .stamp,.rowlist .stampnew,.rowlist .card-path{display:none!important}
+.rowlist .card:not(.xp) .thumb,.rowlist .card:not(.xp) .card-note,.rowlist .card:not(.xp) .altlinks,.rowlist .card:not(.xp) .stamp,.rowlist .card:not(.xp) .stampnew,.rowlist .card:not(.xp) .card-path{display:none!important}
 .rowlist .tipcard{display:none}
-.rowlist .card-top{flex:none;display:flex;align-items:center;gap:9px}
-.rowlist .card-top .right{display:flex;align-items:center;gap:5px}
+.rowlist .card:not(.xp) .card-top{flex:none;display:flex;align-items:center;gap:9px}
+.rowlist .card:not(.xp) .card-top .right{display:flex;align-items:center;gap:5px}
 .rowlist .domain{max-width:180px}
-.rowlist .card-name{flex:1;min-width:0;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
-.rowlist .card-foot{flex:none;margin:0 0 0 auto;align-items:center}
-.rowlist .altbtn{display:none}
+.rowlist .card:not(.xp) .card-name{flex:1;min-width:0;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+.rowlist .card:not(.xp) .card-foot{flex:none;margin:0 0 0 auto;align-items:center}
+.rowlist .card:not(.xp) .altbtn{display:none}
 .rowlist .pinrow{padding:6px 10px;margin-bottom:3px}
+.rowlist .card.xp{margin-bottom:10px}
+.xpb{display:none;flex:none;align-items:center;justify-content:center;width:20px;height:20px;border-radius:3px;color:var(--ink-faint);font-size:11px;border:1px solid transparent;cursor:pointer;background:none}
+.xpb:hover{color:var(--teal);border-color:var(--line-strong)}
+.pinrow .xpb{display:inline-flex}
+.rowlist .card:not(.pinrow) .xpb{display:inline-flex}
+.card.wasrow{position:relative}
+.card.wasrow .xpb,.rowlist .card.xp .xpb{display:inline-flex;position:absolute;left:8px;top:8px;z-index:3;background:var(--card);border-color:var(--line-strong)}
+.sub-head{grid-column:1/-1;font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:16px 2px 6px;margin-top:4px}
+.rowlist .grid.grouped{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.rowlist .grid.grouped .sub-head{grid-column:1/-1}
+.rowlist .grid.grouped .pinrow{grid-column:auto}
+@media (max-width:900px){.rowlist .grid.grouped{grid-template-columns:1fr}}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .card.enter{animation:rise .4s cubic-bezier(.2,.7,.3,1) both}
 @keyframes chipin{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}
@@ -1435,6 +1447,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     }
   });
 
+  var subHeads = {};
   // Filtering
   function applyFilter(){
     if (state.community && favDB){
@@ -1489,8 +1502,36 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       for (var f=0; f<filtered.length; f++){ (items[filtered[f]][6]&1 ? p : r).push(filtered[f]); }
       filtered = p.concat(r);
     }
+    // single-section views group under their subcategory titles
+    subHeads = {};
+    var grouped = false;
+    if (state.sec >= 0 && !state.sub && !state.blk){
+      var gOrder = {}, gN = 0;
+      filtered.forEach(function(fi){ var sv = items[fi][2]; if (sv && !(sv in gOrder)) gOrder[sv] = gN++; });
+      if (gN > 1){
+        grouped = true;
+        var withKey = filtered.map(function(fi, k){
+          var sv = items[fi][2];
+          return [fi, sv in gOrder ? gOrder[sv] : -1, k, isPinItem(fi) ? 1 : 0];
+        });
+        withKey.sort(function(x, y){
+          if (x[1] !== y[1]) return x[1] - y[1];
+          if (x[3] !== y[3]) return x[3] - y[3];   // pins after normal cards
+          if (x[3] && state.sort === 'featured') return items[x[0]][3].toLowerCase().localeCompare(items[y[0]][3].toLowerCase());
+          return x[2] - y[2];                      // otherwise keep the chosen sort, stably
+        });
+        filtered = withKey.map(function(x){ return x[0]; });
+        var prevSub = null;
+        filtered.forEach(function(fi, k){
+          var sv = items[fi][2] || '';
+          if (sv && sv !== prevSub) subHeads[k] = sv;
+          prevSub = sv;
+        });
+      }
+    }
+    grid.classList.toggle('grouped', grouped);
     rendered = 0;
-    grid.querySelectorAll('.card,.tipcard,.empty,.loading-more').forEach(function(n){n.remove()});
+    grid.querySelectorAll('.card,.tipcard,.empty,.loading-more,.sub-head').forEach(function(n){n.remove()});
     updateCrumb();
     updateCount();
     renderPostits();
@@ -1789,6 +1830,60 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           '<span class="vn'+(n<0?' neg':(n>0?' pos':''))+'">'+n+'</span>'+
           '<button class="vdn'+(myVotes[vid]===-1?' on':'')+'" type="button" aria-label="Not useful">\u25BC</button></span>'; })() : '');
   }
+  function isPinItem(idx){
+    var it = items[idx];
+    return !!(it[4] && PIN_SEC[it[1]] && /(^|\.)pinterest\./i.test(it[5]));
+  }
+  function buildPinRow(idx){
+    var it = items[idx];
+    var a = document.createElement('a');
+    a.className = 'card pinrow' + (it[6]&1 ? ' picked' : '');
+    a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.style.setProperty('--cc', cols[it[0]].color);
+    a.innerHTML = '<button class="xpb" type="button" title="Show full card" aria-label="Toggle full card">\u25B8</button>'+
+      '<div class="card-name">'+hl(esc(it[3]))+'</div>'+
+      '<div class="card-foot">'+cardActions(idx,it,false,false)+'</div>';
+    a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
+    a.classList.add('enter');
+    return a;
+  }
+  function buildCard(idx){
+    var it = items[idx], m = meta[idx];
+    var alts = (it.length > 8 && it[4]) ? it[8] : null;
+    var a;
+      if (alts && alts.length){
+        a = document.createElement('div');
+        a.className = 'card multi' + (it[6]&1 ? ' picked' : '');
+        a.setAttribute('role','button'); a.setAttribute('tabindex','0'); a.setAttribute('aria-expanded','false');
+      } else {
+        a = document.createElement('a');
+        a.className = 'card' + (it[6]&1 ? ' picked' : '');
+        a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        if (it[1]===MUSIC_SEC && ytId(it[4])){
+          a.dataset.play = idx;
+          a.title = 'Play here — Ctrl+click to open on YouTube';
+        }
+      }
+      a.style.setProperty('--cc', cols[it[0]].color);
+      var path = esc(tc(secs[it[1]].n)) + (it[2] ? '<span class="sep">›</span>' + esc(tc(it[2])) : '');
+      var pi = platIcon(it[5], it[4]);
+      var fav = pi || (it[5] ? '<img class="fav" loading="lazy" src="https://www.google.com/s2/favicons?domain='+encodeURIComponent(it[5])+'&sz=32" onerror="this.style.display=\'none\'" alt="">' : '');
+      var pirate = ((it[6]&2) || secPirate[it[1]]) ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
+      var thumb = it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '';
+      a.innerHTML = '<button class="xpb" type="button" title="Show full card" aria-label="Toggle full card">\u25B8</button>' + thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') +
+        '<div class="card-top"><span class="callno">'+m.call+'</span><span class="right">'+pirate+'<span class="domain">'+esc(it[5])+'</span></span></div>'+
+        '<div class="card-name">'+fav+hl(esc(it[3]))+'</div>'+
+        (it[7] ? '<div class="card-note">'+esc(it[7])+'</div>' : '')+
+        (alts && alts.length ? '<button class="altbtn" type="button">\u25B8 '+(alts.length+1)+' links</button>'+
+          '<div class="altlinks"><a style="animation-delay:0ms" href="'+esc(it[4])+'" target="_blank" rel="noopener noreferrer">1 \u2197</a>'+
+          alts.map(function(x,xi){var lbl=/^\d+$/.test(x[0])?(xi+2):x[0];return '<a style="animation-delay:'+((xi+1)*35)+'ms" href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(lbl)+' \u2197</a>'}).join('')+'</div>' : '')+
+        '<div class="card-foot"><div class="card-path">'+path+'</div>'+
+        cardActions(idx,it,true,true)+
+        '</div>';
+      a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
+      a.classList.add('enter');
+    return a;
+  }
   function renderChunk(){
     var frag = document.createDocumentFragment();
     var end = Math.min(rendered + CHUNK, filtered.length);
@@ -1809,52 +1904,13 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         frag.appendChild(d);
         continue;
       }
-      var alts = (it.length > 8 && it[4]) ? it[8] : null;
-      var a;
-      if (PIN_SEC[it[1]] && /(^|\.)pinterest\./i.test(it[5])){
-        a = document.createElement('a');
-        a.className = 'card pinrow' + (it[6]&1 ? ' picked' : '');
-        a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        a.style.setProperty('--cc', cols[it[0]].color);
-        a.innerHTML = '<div class="card-name">'+hl(esc(it[3]))+'</div>'+
-          '<div class="card-foot">'+cardActions(idx,it,false,false)+'</div>';
-        a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
-        a.classList.add('enter');
-        a.style.animationDelay = Math.min(stagger++ * 22, 520) + 'ms';
-        frag.appendChild(a);
-        continue;
+      if (subHeads[i] !== undefined){
+        var sh = document.createElement('div');
+        sh.className = 'sub-head';
+        sh.textContent = tc(subHeads[i]);
+        frag.appendChild(sh);
       }
-      if (alts && alts.length){
-        a = document.createElement('div');
-        a.className = 'card multi' + (it[6]&1 ? ' picked' : '');
-        a.setAttribute('role','button'); a.setAttribute('tabindex','0'); a.setAttribute('aria-expanded','false');
-      } else {
-        a = document.createElement('a');
-        a.className = 'card' + (it[6]&1 ? ' picked' : '');
-        a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        if (it[1]===MUSIC_SEC && ytId(it[4])){
-          a.dataset.play = idx;
-          a.title = 'Play here — Ctrl+click to open on YouTube';
-        }
-      }
-      a.style.setProperty('--cc', cols[it[0]].color);
-      var path = esc(tc(secs[it[1]].n)) + (it[2] ? '<span class="sep">›</span>' + esc(tc(it[2])) : '');
-      var pi = platIcon(it[5], it[4]);
-      var fav = pi || (it[5] ? '<img class="fav" loading="lazy" src="https://www.google.com/s2/favicons?domain='+encodeURIComponent(it[5])+'&sz=32" onerror="this.style.display=\'none\'" alt="">' : '');
-      var pirate = ((it[6]&2) || secPirate[it[1]]) ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
-      var thumb = it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '';
-      a.innerHTML = thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') +
-        '<div class="card-top"><span class="callno">'+m.call+'</span><span class="right">'+pirate+'<span class="domain">'+esc(it[5])+'</span></span></div>'+
-        '<div class="card-name">'+fav+hl(esc(it[3]))+'</div>'+
-        (it[7] ? '<div class="card-note">'+esc(it[7])+'</div>' : '')+
-        (alts && alts.length ? '<button class="altbtn" type="button">\u25B8 '+(alts.length+1)+' links</button>'+
-          '<div class="altlinks"><a style="animation-delay:0ms" href="'+esc(it[4])+'" target="_blank" rel="noopener noreferrer">1 \u2197</a>'+
-          alts.map(function(x,xi){var lbl=/^\d+$/.test(x[0])?(xi+2):x[0];return '<a style="animation-delay:'+((xi+1)*35)+'ms" href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(lbl)+' \u2197</a>'}).join('')+'</div>' : '')+
-        '<div class="card-foot"><div class="card-path">'+path+'</div>'+
-        cardActions(idx,it,true,true)+
-        '</div>';
-      a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
-      a.classList.add('enter');
+      var a = isPinItem(idx) ? buildPinRow(idx) : buildCard(idx);
       a.style.animationDelay = Math.min(stagger++ * 22, 520) + 'ms';
       frag.appendChild(a);
     }
@@ -2063,6 +2119,26 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
+    var xb = e.target.closest('.xpb');
+    if (xb){
+      e.preventDefault(); e.stopPropagation();
+      var xcard = xb.closest('.card');
+      var xi = +xcard.dataset.i;
+      if (xcard.classList.contains('pinrow')){
+        var full = buildCard(xi);
+        full.classList.add('wasrow');
+        var fxb = full.querySelector('.xpb');
+        if (fxb){ fxb.textContent = '\u25BE'; fxb.title = 'Back to compact row'; }
+        xcard.replaceWith(full);
+      } else if (xcard.classList.contains('wasrow')){
+        xcard.replaceWith(buildPinRow(xi));
+      } else {
+        var xon = xcard.classList.toggle('xp');
+        xb.textContent = xon ? '\u25BE' : '\u25B8';
+        xb.title = xon ? 'Collapse card' : 'Show full card';
+      }
+      return;
+    }
     var pd = e.target.closest('.pdot');
     if (pd && user && (user.email || '').toLowerCase() === ADMIN_EMAIL){
       e.preventDefault(); e.stopPropagation();
@@ -2483,7 +2559,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     }
     // whole playable music card plays in-site; modified clicks keep normal link behavior
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-    if (e.target.closest('.altbtn,.altlinks,.favb,.vote,.flagb,.pdot')) return;
+    if (e.target.closest('.altbtn,.altlinks,.favb,.vote,.flagb,.pdot,.xpb')) return;
     var card = e.target.closest('.card');
     if (card && card.dataset.play !== undefined){
       e.preventDefault();
