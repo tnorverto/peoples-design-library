@@ -1502,16 +1502,19 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       for (var f=0; f<filtered.length; f++){ (items[filtered[f]][6]&1 ? p : r).push(filtered[f]); }
       filtered = p.concat(r);
     }
-    // single-section views group under their subcategory titles
+    // section views group under subcategory titles; collection views group under section titles
     subHeads = {};
     var grouped = false;
-    if (state.sec >= 0 && !state.sub && !state.blk){
+    var gkey = null;
+    if (state.sec >= 0 && !state.sub && !state.blk) gkey = function(fi){ return items[fi][2] || ''; };
+    else if (state.sec < 0 && (state.col >= 0 || state.grp)) gkey = function(fi){ return secs[items[fi][1]].n; };
+    if (gkey){
       var gOrder = {}, gN = 0;
-      filtered.forEach(function(fi){ var sv = items[fi][2]; if (sv && !(sv in gOrder)) gOrder[sv] = gN++; });
+      filtered.forEach(function(fi){ var sv = gkey(fi); if (sv && !(sv in gOrder)) gOrder[sv] = gN++; });
       if (gN > 1){
         grouped = true;
         var withKey = filtered.map(function(fi, k){
-          var sv = items[fi][2];
+          var sv = gkey(fi);
           return [fi, sv in gOrder ? gOrder[sv] : -1, k, isPinItem(fi) ? 1 : 0];
         });
         withKey.sort(function(x, y){
@@ -1523,7 +1526,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         filtered = withKey.map(function(x){ return x[0]; });
         var prevSub = null;
         filtered.forEach(function(fi, k){
-          var sv = items[fi][2] || '';
+          var sv = gkey(fi);
           if (sv && sv !== prevSub) subHeads[k] = sv;
           prevSub = sv;
         });
