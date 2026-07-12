@@ -230,6 +230,15 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 @keyframes vslidedn{from{transform:translateY(-85%);opacity:0}to{transform:none;opacity:1}}
 .vn.a-up{animation:vslideup .28s cubic-bezier(.2,.7,.3,1)}
 .vn.a-dn{animation:vslidedn .28s cubic-bezier(.2,.7,.3,1)}
+/* vote widget adapted to the dark player bar */
+.pl-vote{flex:none;background:rgba(234,241,239,.05);border-color:rgba(234,241,239,.28)}
+.pl-vote .vup,.pl-vote .vdn,.pl-vote .vn{color:#9FC1BC}
+.pl-vote .vup:hover{color:#8FD0C6;background:rgba(143,208,198,.16)}
+.pl-vote .vup.on{color:#0F191B;background:#8FD0C6}
+.pl-vote .vdn:hover{color:#E0705A;background:rgba(224,112,90,.16)}
+.pl-vote .vdn.on{color:#fff;background:#E0705A}
+.pl-vote .vn.pos{color:#8FD0C6;font-weight:500}
+.pl-vote .vn.neg{color:#E0705A}
 .vghost{position:absolute;left:50%;top:-4px;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;font-weight:700;pointer-events:none;animation:ghostup .7s ease-out forwards}
 .vghost.dn{top:auto;bottom:-4px;animation-name:ghostdn}
 @keyframes ghostup{to{transform:translate(-50%,-18px);opacity:0}}
@@ -526,6 +535,11 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     <button class="pl-btn" id="plNext" aria-label="Next track" title="Shuffle next">⏭</button>
     <button class="pl-btn pl-shuf" id="plShuf" aria-label="Toggle shuffle" aria-pressed="true" style="display:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
     <button class="pl-btn pl-fav" id="plFav" aria-label="Save to my favorites" title="Save to my favorites" style="display:none">♡</button>
+    <span class="vote pl-vote" id="plVote" title="Was this useful?" style="display:none">
+      <button class="vup" type="button" aria-label="Useful">&#9650;</button>
+      <span class="vn">0</span>
+      <button class="vdn" type="button" aria-label="Not useful">&#9660;</button>
+    </span>
   </div>
   <a class="pl-yt" id="plYT" href="#" target="_blank" rel="noopener">Open on YouTube ↗</a>
   <button class="pl-btn pl-close" id="plClose" aria-label="Close player" title="Close">✕</button>
@@ -598,7 +612,28 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       b.querySelector('.vup').classList.toggle('on', myVotes[id] === 1);
       b.querySelector('.vdn').classList.toggle('on', myVotes[id] === -1);
     });
+    updatePlVote();
   }
+  // Keeps the in-player vote widget matched to the current song and the shared vote state.
+  function updatePlVote(){
+    var w = document.getElementById('plVote');
+    if (!w) return;
+    if (!VOTES_DB || !(curIdx >= 0) || !items[curIdx] || !items[curIdx][4]){ w.style.display = 'none'; return; }
+    w.style.display = '';
+    var vid = voteId(items[curIdx][4]);
+    w.dataset.vid = vid;
+    var n = votes[vid] || 0;
+    var vn = w.querySelector('.vn');
+    vn.textContent = n;
+    vn.classList.toggle('neg', n < 0);
+    vn.classList.toggle('pos', n > 0);
+    w.querySelector('.vup').classList.toggle('on', myVotes[vid] === 1);
+    w.querySelector('.vdn').classList.toggle('on', myVotes[vid] === -1);
+  }
+  document.getElementById('plVote').addEventListener('click', function(e){
+    var up = e.target.closest('.vup'), dn = e.target.closest('.vdn');
+    if (up || dn){ castVote(up || dn, up ? 1 : -1); }
+  });
   if (VOTES_DB){
     var sortSel = document.getElementById('sortSel');
     sortSel.style.display = '';
@@ -1735,6 +1770,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     document.getElementById('plElapsed').style.width = '0';
     document.getElementById('plTime').textContent = '';
     updatePlFav();
+    updatePlVote();
     markNowPlaying();
     if (!ytReady || !yt || !yt.loadVideoById){ pending = {i: i, s: !!single}; loadYT(); return; }
     var lid = single ? null : ytList(it[4]);   // shuffle plays stay single-song
