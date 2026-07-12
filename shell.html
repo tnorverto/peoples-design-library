@@ -279,6 +279,10 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .favb:hover{color:#E0705A;transform:scale(1.15)}
 .favb.on{color:#E0705A}
 .favb.pop{transform:scale(1.35)}
+.flagb{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;color:var(--ink-faint);opacity:.5;transition:color .15s,opacity .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
+.flagb:hover{color:var(--stamp);opacity:1;transform:scale(1.15)}
+.flagb.on{color:var(--stamp);opacity:1;cursor:default}
+.flagb.pop{transform:scale(1.35)}
 
 /* ---------- Music player ---------- */
 .player{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:center;gap:14px;padding:10px 18px;background:var(--teal-deep);color:#EAF1EF;border-top:2px solid #C9A03A;box-shadow:0 -8px 28px rgba(0,0,0,.35)}
@@ -365,6 +369,56 @@ body:has(.player.on) .wc-box{bottom:118px}
 .tipcard .tiplinks a{font-family:var(--font-mono);font-size:11px;color:#8A6D1D;border:1px solid #E3DCC4;border-radius:3px;padding:3px 8px;text-decoration:none;background:#fff}
 .tipcard .tiplinks a:hover{border-color:#C9A03A}
 @media (max-width:640px){.tipcard{grid-column:1/-1}}
+.community-drawer{margin-top:8px;border-top:1px solid var(--line)}
+.community-drawer .drawer-head{color:var(--teal)}
+.community-drawer .code{font-size:14px}
+.community-view{max-width:920px;margin:0 auto;padding:22px 18px 60px}
+.community-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:16px}
+.community-header h2{margin:0;font-family:var(--font-display);font-size:32px;line-height:1;color:var(--ink)}
+.community-tagline{margin-top:6px;color:var(--ink-soft);font-size:13px}
+.community-sort{display:flex;border:1px solid var(--line-strong);border-radius:4px;background:var(--paper);padding:2px}
+.community-sort button{padding:5px 10px;border-radius:3px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+.community-sort button.active{background:var(--teal);color:#fff}
+.community-composer,.community-post{background:var(--card);border:1px solid var(--line-strong);border-radius:4px}
+.community-composer{display:grid;gap:9px;padding:15px;margin-bottom:18px}
+.community-composer input,.community-composer textarea,.comment-compose textarea{width:100%;border:1px solid var(--line-strong);border-radius:3px;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:13px;padding:9px 10px;outline:none}
+.community-composer input:focus,.community-composer textarea:focus,.comment-compose textarea:focus{border-color:var(--teal)}
+.community-composer textarea{min-height:88px;resize:vertical}
+.community-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.community-identity,.community-error,.community-meta,.comment-meta{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint)}
+.community-identity button{color:var(--teal);text-decoration:underline}
+.community-submit,.comment-submit{border-radius:3px;background:var(--teal);color:#fff;padding:7px 13px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.community-submit:disabled,.comment-submit:disabled{opacity:.55}
+.community-error{color:var(--stamp);min-height:12px}
+.community-list{display:grid;gap:10px}
+.community-post{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:14px}
+.community-vote{align-self:start;display:flex;align-items:center;gap:5px;border:1px solid var(--line-strong);border-radius:999px;padding:3px 7px;background:var(--paper);font-family:var(--font-mono);font-size:11px;color:var(--ink-faint)}
+.community-vote.on{color:var(--teal);border-color:var(--teal)}
+.community-post-title{font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--ink);line-height:1.2}
+.community-post-title a{color:inherit;text-decoration:none}
+.community-post-title a:hover{text-decoration:underline}
+.community-domain{margin-left:7px;font-family:var(--font-mono);font-size:9px;color:var(--ink-faint)}
+.community-body{margin-top:8px;color:var(--ink-soft);font-size:13px;line-height:1.55;white-space:pre-wrap}
+.community-meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:10px}
+.community-meta button,.comment-meta button{color:var(--teal)}
+.community-delete{color:var(--stamp)!important;margin-left:auto}
+.community-comments{display:none;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}
+.community-comments.open{display:block}
+.comment-list{display:grid;gap:9px;margin-bottom:10px}
+.community-comment{padding-left:10px;border-left:2px solid var(--line-strong)}
+.comment-body{color:var(--ink-soft);font-size:12.5px;line-height:1.5;white-space:pre-wrap}
+.comment-meta{display:flex;gap:6px;margin-top:3px}
+.comment-compose{display:grid;gap:7px}
+.comment-compose textarea{min-height:58px;resize:vertical}
+.comment-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.community-empty{padding:34px;text-align:center;border:1px dashed var(--line-strong);border-radius:4px;color:var(--ink-faint);font-family:var(--font-mono);font-size:11px}
+@media (max-width:640px){
+  .community-view{padding:16px 12px 45px}
+  .community-header{align-items:flex-start;flex-direction:column}
+  .community-post{grid-template-columns:1fr}
+  .community-vote{justify-self:start}
+  .community-compose-foot{align-items:flex-start;flex-direction:column}
+}
 .sec-btn.tips-sec{color:#8A6D1D}
 
 /* ---------- Footer ---------- */
@@ -519,6 +573,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       <div class="jumpbar" id="jumpbar" style="display:none"></div>
       <div class="subbar" id="subbar" style="display:none"></div>
     </div>
+    <div class="community-view" id="communityView" style="display:none"></div>
     <div id="sentinel"></div>
   </main>
 </div>
@@ -673,6 +728,28 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     fetch(VOTES_DB.replace(/\/$/, '') + '/votes.json', {method: 'PATCH', body: JSON.stringify(body)}).catch(function(){});
   }
 
+  // ---- Report broken link (private reports collected under /flags) ----
+  var myFlags = {};
+  try { myFlags = JSON.parse(localStorage.getItem('pdl-flagged') || '{}') || {}; } catch(e){}
+  function castFlag(btn){
+    if (!VOTES_DB) return;
+    var card = btn.closest('.card');
+    var url = card && card.dataset.url;
+    if (!url) return;
+    var vid = voteId(url);
+    if (myFlags[vid]) return;                      // one report per browser per link
+    myFlags[vid] = 1;
+    try { localStorage.setItem('pdl-flagged', JSON.stringify(myFlags)); } catch(e){}
+    btn.classList.add('on');
+    btn.title = 'Reported — thank you';
+    btn.classList.add('pop'); setTimeout(function(){ btn.classList.remove('pop'); }, 200);
+    var nameEl = card.querySelector('.card-name');
+    var body = {u: url, t: nameEl ? nameEl.textContent.trim().slice(0, 150) : '',
+                n: {'.sv': {'increment': 1}}, ts: {'.sv': 'timestamp'}};
+    fetch(VOTES_DB.replace(/\/$/, '') + '/flags/' + vid + '.json',
+      {method: 'PATCH', body: JSON.stringify(body)}).catch(function(){});
+  }
+
 
 
   // ---- Google sign-in + favorites (Firebase Auth, REST database writes) ----
@@ -785,6 +862,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
             favSet = {}; idToken = null; refreshFavEls();
           }
           renderAuth();
+          if (state.community) renderCommunity();
         });
       })
       .catch(function(){});
@@ -884,7 +962,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   })();
 
   // State
-  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, facet:-1, facetSub:'', sort:'featured'};
+  var state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, facet:-1, facetSub:'', sort:'featured', community:false};
   var filtered = [];
   var rendered = 0;
   var CHUNK = 72;
@@ -1005,11 +1083,316 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
       '<div class="drawer-sections">'+secBtns+'</div>';
     drawerList.appendChild(d);
   });
+  if (favDB){
+    var communityDrawer = document.createElement('div');
+    communityDrawer.className = 'drawer community-drawer';
+    communityDrawer.innerHTML = '<button class="drawer-head" data-community="1"><span class="code">\uD83D\uDCAC</span><span class="dname">Community</span></button>';
+    drawerList.appendChild(communityDrawer);
+  }
 
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
+  // Community
+  var ADMIN_EMAIL = 'tnorverto@gmail.com';
+  var communityView = document.getElementById('communityView');
+  var communityPosts = [];
+  var communitySort = 'new';
+  var communityLoaded = false;
+  var communityLoading = false;
+  var communityComments = {};
+  var communityOpen = {};
+  var communityVotes = {};
+  try { communityVotes = JSON.parse(localStorage.getItem('pdl-cvoted') || '{}') || {}; } catch(e){}
+
+  function communityBase(){
+    return favDB ? favDB.replace(/\/$/, '') + '/community' : '';
+  }
+  function communityAuth(){
+    return user && idToken ? '?auth=' + encodeURIComponent(idToken) : '';
+  }
+  function communityName(){
+    return user ? (user.displayName || user.email || 'Member') : 'Anonymous';
+  }
+  function communityCanDelete(x){
+    return !!(user && (user.uid === x.uid || (user.email || '').toLowerCase() === ADMIN_EMAIL));
+  }
+  function communityAgo(ts){
+    var n = Math.max(0, Date.now() - (+ts || Date.now()));
+    var s = Math.floor(n / 1000);
+    if (s < 60) return 'just now';
+    var m = Math.floor(s / 60);
+    if (m < 60) return m + 'm ago';
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    var d = Math.floor(h / 24);
+    if (d < 30) return d + 'd ago';
+    var mo = Math.floor(d / 30);
+    if (mo < 12) return mo + 'mo ago';
+    return Math.floor(mo / 12) + 'y ago';
+  }
+  function communityURL(u){
+    return typeof u === 'string' && u.length <= 500 && /^https?:\/\//i.test(u);
+  }
+  function communityDomain(u){
+    try { return new URL(u).hostname.replace(/^www\./, ''); } catch(e){ return ''; }
+  }
+  function communityIdentity(){
+    return user ? 'Posting as ' + esc(communityName()) :
+      'Posting as Anonymous \u00B7 <button type="button" data-caction="signin">sign in</button>';
+  }
+  function loadCommunityPosts(force){
+    if (!favDB || communityLoading || (communityLoaded && !force)) return;
+    communityLoading = true;
+    fetch(communityBase() + '/posts.json')
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(j){
+        communityPosts = Object.keys(j || {}).map(function(id){
+          var p = j[id] || {};
+          p.id = id;
+          return p;
+        });
+        communityLoaded = true;
+        communityLoading = false;
+        if (state.community) renderCommunity();
+      })
+      .catch(function(){
+        communityLoading = false;
+        if (state.community){
+          var err = communityView.querySelector('.community-load-error');
+          if (err) err.textContent = 'Couldn\u2019t load posts \u2014 try again.';
+        }
+      });
+  }
+  function renderCommunity(){
+    // re-renders must not eat what the user is typing
+    var draft = null, cdrafts = {};
+    var of = document.getElementById('communityComposer');
+    if (of) draft = {t: of.elements.title.value, u: of.elements.url.value, b: of.elements.body.value};
+    communityView.querySelectorAll('.community-post').forEach(function(pp){
+      var ta = pp.querySelector('.comment-compose textarea');
+      if (ta && ta.value) cdrafts[pp.dataset.pid] = ta.value;
+    });
+    renderCommunityInner();
+    var nf = document.getElementById('communityComposer');
+    if (nf && draft){ nf.elements.title.value = draft.t; nf.elements.url.value = draft.u; nf.elements.body.value = draft.b; }
+    Object.keys(cdrafts).forEach(function(pid){
+      var ta = communityView.querySelector('.community-post[data-pid="' + pid + '"] .comment-compose textarea');
+      if (ta) ta.value = cdrafts[pid];
+    });
+  }
+  function renderCommunityInner(){
+    var posts = communityPosts.slice();
+    posts.sort(communitySort === 'top' ?
+      function(a,b){ return (+b.v || 0) - (+a.v || 0) || (+b.ts || 0) - (+a.ts || 0); } :
+      function(a,b){ return (+b.ts || 0) - (+a.ts || 0); });
+    posts = posts.slice(0, 100);
+    communityView.innerHTML =
+      '<div class="community-header"><div><h2>Community</h2><div class="community-tagline">Suggest links, ask questions, help the library grow.</div></div>'+
+      '<div class="community-sort"><button type="button" data-csort="new" class="'+(communitySort === 'new' ? 'active' : '')+'">New</button>'+
+      '<button type="button" data-csort="top" class="'+(communitySort === 'top' ? 'active' : '')+'">Top</button></div></div>'+
+      '<form class="community-composer" id="communityComposer">'+
+      '<input name="title" maxlength="120" required placeholder="Suggest a link, ask a question\u2026" aria-label="Post title">'+
+      '<input name="url" maxlength="500" placeholder="https://\u2026 (optional)" aria-label="Post URL">'+
+      '<textarea name="body" maxlength="2000" placeholder="Add some context\u2026 (optional)" aria-label="Post body"></textarea>'+
+      '<div class="community-compose-foot"><div><div class="community-identity">'+communityIdentity()+'</div><div class="community-error" aria-live="polite"></div></div>'+
+      '<button class="community-submit" type="submit">Post</button></div></form>'+
+      '<div class="community-load-error community-error" aria-live="polite"></div>'+
+      '<div class="community-list">'+(communityLoading && !communityLoaded ?
+        '<div class="community-empty">Loading community posts\u2026</div>' :
+        (posts.length ? posts.map(renderCommunityPost).join('') :
+          '<div class="community-empty">No posts yet. Start the conversation.</div>'))+'</div>';
+  }
+  function renderCommunityPost(p){
+    var validURL = communityURL(p.u);
+    var title = esc(p.t || '');
+    var titleHTML = validURL ?
+      '<a href="'+esc(p.u)+'" target="_blank" rel="noopener noreferrer">'+title+'</a><span class="community-domain">'+esc(communityDomain(p.u))+'</span>' :
+      title;
+    return '<article class="community-post" data-pid="'+esc(p.id)+'">'+
+      '<button class="community-vote'+(communityVotes[p.id] ? ' on' : '')+'" type="button" data-caction="vote">\u25B2 <span>'+Math.max(0, +p.v || 0)+'</span></button>'+
+      '<div><div class="community-post-title">'+titleHTML+'</div>'+
+      (p.b ? '<div class="community-body">'+esc(p.b)+'</div>' : '')+
+      '<div class="community-meta"><span>'+esc(p.a || 'Anonymous')+'</span><span>\u00B7</span><span>'+communityAgo(p.ts)+'</span><span>\u00B7</span>'+
+      '<button type="button" data-caction="comments">'+Math.max(0, +p.c || 0)+' comments</button>'+
+      (communityCanDelete(p) ? '<button class="community-delete" type="button" data-caction="delete-post" title="Delete post">\u2715</button>' : '')+
+      '</div><div class="community-comments'+(communityOpen[p.id] ? ' open' : '')+'">'+renderCommunityComments(p)+'</div></div></article>';
+  }
+  function renderCommunityComments(p){
+    if (!communityOpen[p.id]) return '';
+    var list = communityComments[p.id];
+    if (!list) return '<div class="community-empty">Loading comments\u2026</div>';
+    return '<div class="comment-list">'+(list.length ? list.map(function(c){
+      return '<div class="community-comment" data-cid="'+esc(c.id)+'"><div class="comment-body">'+esc(c.b || '')+'</div>'+
+        '<div class="comment-meta"><span>'+esc(c.a || 'Anonymous')+'</span><span>\u00B7</span><span>'+communityAgo(c.ts)+'</span>'+
+        (communityCanDelete(c) ? '<button class="community-delete" type="button" data-caction="delete-comment" title="Delete comment">\u2715</button>' : '')+
+        '</div></div>';
+    }).join('') : '<div class="community-empty">No comments yet.</div>')+'</div>'+
+      '<form class="comment-compose"><textarea name="body" maxlength="1000" required placeholder="Write a comment\u2026" aria-label="Comment"></textarea>'+
+      '<div class="comment-compose-foot"><div><div class="community-identity">'+communityIdentity()+'</div><div class="community-error" aria-live="polite"></div></div>'+
+      '<button class="comment-submit" type="submit">Comment</button></div></form>';
+  }
+  function loadCommunityComments(pid){
+    fetch(communityBase() + '/comments/' + encodeURIComponent(pid) + '.json')
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(j){
+        communityComments[pid] = Object.keys(j || {}).map(function(id){
+          var c = j[id] || {};
+          c.id = id;
+          return c;
+        }).sort(function(a,b){ return (+a.ts || 0) - (+b.ts || 0); });
+        if (state.community) renderCommunity();
+      })
+      .catch(function(){
+        communityComments[pid] = [];
+        if (state.community) renderCommunity();
+      });
+  }
+  function submitCommunityPost(form){
+    var title = form.elements.title.value.trim();
+    var url = form.elements.url.value.trim();
+    var body = form.elements.body.value.trim();
+    var error = form.querySelector('.community-error');
+    var button = form.querySelector('.community-submit');
+    error.textContent = '';
+    if (title.length < 4 || title.length > 120){
+      error.textContent = 'Title must be 4\u2013120 characters.';
+      return;
+    }
+    if (url && !communityURL(url)){
+      error.textContent = 'URL must begin with http:// or https://.';
+      return;
+    }
+    if (body.length > 2000) return;
+    button.disabled = true;
+    var post = {t:title, b:body || '', u:url || '', a:user ? communityName() : null,
+      uid:user ? user.uid : null, ts:{'.sv':'timestamp'}, v:0, c:0};
+    fetch(communityBase() + '/posts.json' + communityAuth(),
+      {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(post)})
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(j){
+        post.id = j.name;
+        post.ts = Date.now();
+        communityPosts.unshift(post);
+        form.reset();
+        renderCommunity();
+      })
+      .catch(function(){
+        button.disabled = false;
+        error.textContent = 'Couldn\u2019t post \u2014 try again.';
+      });
+  }
+  function submitCommunityComment(form, pid){
+    var body = form.elements.body.value.trim();
+    var error = form.querySelector('.community-error');
+    var button = form.querySelector('.comment-submit');
+    error.textContent = '';
+    if (!body || body.length > 1000){
+      error.textContent = 'Comment must be 1\u20131000 characters.';
+      return;
+    }
+    button.disabled = true;
+    var comment = {b:body, a:user ? communityName() : null, uid:user ? user.uid : null, ts:{'.sv':'timestamp'}};
+    fetch(communityBase() + '/comments/' + encodeURIComponent(pid) + '.json' + communityAuth(),
+      {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(comment)})
+      .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(j){
+        comment.id = j.name;
+        comment.ts = Date.now();
+        communityComments[pid] = communityComments[pid] || [];
+        communityComments[pid].push(comment);
+        form.reset();
+        var post = communityPosts.find(function(p){ return p.id === pid; });
+        if (post) post.c = (+post.c || 0) + 1;
+        return fetch(communityBase() + '/posts/' + encodeURIComponent(pid) + '.json',
+          {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({c:{'.sv':{'increment':1}}})});
+      })
+      .then(function(){ renderCommunity(); })
+      .catch(function(){
+        button.disabled = false;
+        error.textContent = 'Couldn\u2019t comment \u2014 try again.';
+      });
+  }
+  function voteCommunityPost(pid){
+    var post = communityPosts.find(function(p){ return p.id === pid; });
+    if (!post) return;
+    var was = !!communityVotes[pid];
+    var delta = was ? -1 : 1;
+    if (was) delete communityVotes[pid]; else communityVotes[pid] = 1;
+    post.v = Math.max(0, (+post.v || 0) + delta);
+    try { localStorage.setItem('pdl-cvoted', JSON.stringify(communityVotes)); } catch(e){}
+    renderCommunity();
+    fetch(communityBase() + '/posts/' + encodeURIComponent(pid) + '.json',
+      {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({v:{'.sv':{'increment':delta}}})})
+      .catch(function(){});
+  }
+  function deleteCommunityPost(pid){
+    if (!idToken) return;
+    fetch(communityBase() + '/posts/' + encodeURIComponent(pid) + '.json?auth=' + encodeURIComponent(idToken),
+      {method:'DELETE'})
+      .then(function(r){ if (!r.ok) throw new Error(); communityPosts = communityPosts.filter(function(p){ return p.id !== pid; }); renderCommunity(); })
+      .catch(function(){});
+  }
+  function deleteCommunityComment(pid, cid){
+    if (!idToken) return;
+    fetch(communityBase() + '/comments/' + encodeURIComponent(pid) + '/' + encodeURIComponent(cid) + '.json?auth=' + encodeURIComponent(idToken),
+      {method:'DELETE'})
+      .then(function(r){
+        if (!r.ok) throw new Error();
+        communityComments[pid] = (communityComments[pid] || []).filter(function(c){ return c.id !== cid; });
+        var post = communityPosts.find(function(p){ return p.id === pid; });
+        if (post) post.c = Math.max(0, (+post.c || 0) - 1);
+        return fetch(communityBase() + '/posts/' + encodeURIComponent(pid) + '.json',
+          {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({c:{'.sv':{'increment':-1}}})});
+      })
+      .then(function(){ renderCommunity(); })
+      .catch(function(){});
+  }
+  communityView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var post = e.target.closest('.community-post');
+    if (e.target.id === 'communityComposer') submitCommunityPost(e.target);
+    else if (e.target.classList.contains('comment-compose') && post) submitCommunityComment(e.target, post.dataset.pid);
+  });
+  communityView.addEventListener('click', function(e){
+    var sort = e.target.closest('[data-csort]');
+    if (sort){ communitySort = sort.dataset.csort; renderCommunity(); return; }
+    var action = e.target.closest('[data-caction]');
+    if (!action) return;
+    if (action.dataset.caction === 'signin'){ signIn(); return; }
+    var post = action.closest('.community-post');
+    if (!post) return;
+    var pid = post.dataset.pid;
+    if (action.dataset.caction === 'vote') voteCommunityPost(pid);
+    else if (action.dataset.caction === 'comments'){
+      communityOpen[pid] = !communityOpen[pid];
+      if (communityOpen[pid] && !communityComments[pid]) loadCommunityComments(pid);
+      renderCommunity();
+    } else if (action.dataset.caction === 'delete-post') deleteCommunityPost(pid);
+    else if (action.dataset.caction === 'delete-comment'){
+      var comment = action.closest('.community-comment');
+      if (comment) deleteCommunityComment(pid, comment.dataset.cid);
+    }
+  });
+
   // Filtering
   function applyFilter(){
+    if (state.community && favDB){
+      grid.style.display = 'none';
+      communityView.style.display = '';
+      sentinel.style.display = 'none';
+      postits.classList.remove('has','open');
+      postitFab.classList.remove('has');
+      crumb.textContent = '\uD83D\uDCAC Community \u2014 suggest links, ask questions';
+      countEl.style.display = 'none';
+      loadCommunityPosts(false);
+      renderCommunity();
+      writeHash();
+      return;
+    }
+    grid.style.display = '';
+    communityView.style.display = 'none';
+    sentinel.style.display = '';
+    countEl.style.display = '';
     var q = state.q.trim().toLowerCase();
     var terms = q ? q.split(/\s+/) : [];
     buildHl();
@@ -1368,6 +1751,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
           alts.map(function(x,xi){var lbl=/^\d+$/.test(x[0])?(xi+2):x[0];return '<a style="animation-delay:'+((xi+1)*35)+'ms" href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(lbl)+' \u2197</a>'}).join('')+'</div>' : '')+
         '<div class="card-foot"><div class="card-path">'+path+'</div>'+
         (it[1]===MUSIC_SEC && ytId(it[4]) ? '<button class="playbtn" data-i="'+idx+'" type="button" title="Play here">\u25B6</button>' : '')+
+        (VOTES_DB && it[4] ? (function(){ var vid = voteId(it[4]);
+          return '<button class="flagb'+(myFlags[vid]?' on':'')+'" type="button" title="'+(myFlags[vid]?'Reported \u2014 thank you':'Report broken link')+'" aria-label="Report broken link">\u2691</button>'; })() : '')+
         (FIREBASE ? (function(){ var vid = voteId(it[4]);
           return '<button class="favb'+(favSet[vid]?' on':'')+'" data-vid="'+vid+'" type="button">'+(favSet[vid]?'\u2764':'\u2661')+'</button>'; })() : '')+
         (VOTES_DB ? (function(){ var vid = voteId(it[4]); var n = votes[vid]||0;
@@ -1401,8 +1786,15 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 
   // Search
   var searchEl = document.getElementById('search');
+  document.addEventListener('click', function(e){
+    if (!state.community) return;
+    if (e.target.closest('#drawerList,#allBtn,#picksBtn,#newBtn,#favFilterBtn,#favBtnSlot,#facetbar,#subfacetbar,#jumpbar,#subbar')){
+      state.community = false;
+    }
+  }, true);
   var deb;
   searchEl.addEventListener('input', function(){
+    state.community = false;
     clearTimeout(deb);
     deb = setTimeout(function(){
       state.q = searchEl.value;
@@ -1465,6 +1857,17 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   drawerList.addEventListener('click', function(e){
     var head = e.target.closest('.drawer-head');
     var secBtn = e.target.closest('.sec-btn');
+    if (head && head.dataset.community){
+      state.community = true;
+      state.q = '';
+      searchEl.value = '';
+      drawerList.querySelectorAll('.drawer.open').forEach(function(d){ d.classList.remove('open'); });
+      syncNav();
+      applyFilter();
+      maybeCloseMobile();
+      window.scrollTo({top: Math.max(communityView.getBoundingClientRect().top + window.scrollY - 74, 0)});
+      return;
+    }
     if (head){
       var ci = +head.dataset.col;
       var drawer = head.parentElement;
@@ -1529,7 +1932,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   });
 
   function reset(){
-    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, facet:-1, facetSub:'', sort:'featured'};
+    state = {q:'', col:-1, sec:-1, sub:'', blk:'', grp:null, grpKey:null, grpLabel:'', picks:false, tips:false, fresh:false, favs:false, facet:-1, facetSub:'', sort:'featured', community:false};
     searchEl.value = '';
     picksBtn.setAttribute('aria-pressed','false');
     newBtn.setAttribute('aria-pressed','false');
@@ -1569,6 +1972,8 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
+    var flb = e.target.closest('.flagb');
+    if (flb){ e.preventDefault(); e.stopPropagation(); castFlag(flb); return; }
     var fb = e.target.closest('.favb');
     if (fb){ e.preventDefault(); e.stopPropagation(); toggleFav(fb); return; }
     var up = e.target.closest('.vup'), dn = e.target.closest('.vdn');
@@ -1588,6 +1993,11 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   var hashReady = false;
   function writeHash(){
     if (!hashReady) return;
+    if (state.community){
+      try { history.replaceState(null, '', '#community'); }
+      catch(e){ try { location.hash = 'community'; } catch(e2){} }
+      return;
+    }
     var p = new URLSearchParams();
     if (state.col >= 0) p.set('c', cols[state.col].code);
     if (state.sec >= 0) p.set('s', secs[state.sec].n);
@@ -1609,6 +2019,11 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   function readHash(){
     if (!location.hash || location.hash.length < 2) return;
     try {
+      if (location.hash === '#community'){
+        state.community = !!favDB;
+        return;
+      }
+      state.community = false;
       var p = new URLSearchParams(location.hash.slice(1));
       var code = p.get('c');
       if (code){
@@ -1646,6 +2061,11 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   applyFilter();
   hashReady = true;
   writeHash();
+  window.addEventListener('hashchange', function(){
+    readHash();
+    syncNav();
+    applyFilter();
+  });
 
   // ---- Surprise me ----
   document.getElementById('surpriseBtn').addEventListener('click', function(){
@@ -1939,7 +2359,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     }
     // whole playable music card plays in-site; modified clicks keep normal link behavior
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
-    if (e.target.closest('.altbtn,.altlinks,.favb,.vote')) return;
+    if (e.target.closest('.altbtn,.altlinks,.favb,.vote,.flagb')) return;
     var card = e.target.closest('.card');
     if (card && card.dataset.play !== undefined){
       e.preventDefault();
