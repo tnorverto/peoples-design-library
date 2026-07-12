@@ -803,6 +803,7 @@ def build(src):
         ("Plugins", "PL", "#8A6D1D"),
         ("Tutorials", "TU", "#34518F"),
         ("Extras", "EX", "#A8502F"),
+        ("Music", "MU", "#8C3E64"),
     ]
     OLD_TO_NEW = {0: 0, 1: 1, 2: 2, 4: 7, 5: 8}   # AI sheet (3) routes by section
     PRINT_SECTIONS = {"3D Print Inspiration", "3D Print Tutorials", "3D Print Assets"}
@@ -815,13 +816,31 @@ def build(src):
             return 4
         return 5
 
+    # music sections get their own top-level "Music" collection (index 9)
+    MUSIC_SECTIONS = ["MUSIC", "SPOTIFY PLAYLISTS", "YOUTUBE MUSIC CHANNELS", "FREE MUSIC WEBSITES / APPS"]
+
     for s in sections:
         if s["n"] in PRINT_SECTIONS:
             s["c"] = 3
+        elif s["n"].upper() in MUSIC_SECTIONS:
+            s["c"] = 9
         elif s["c"] == 3:
             s["c"] = route_ai(s["n"])
         else:
             s["c"] = OLD_TO_NEW[s["c"]]
+
+    # reorder the music sections so the drawer lists them in the intended order
+    music_rank = {n: k for k, n in enumerate(MUSIC_SECTIONS)}
+    new_order = [si for si, s in enumerate(sections) if s["c"] != 9]
+    new_order += sorted([si for si, s in enumerate(sections) if s["c"] == 9],
+                        key=lambda si: music_rank.get(sections[si]["n"].upper(), 99))
+    remap3 = {old: new for new, old in enumerate(new_order)}
+    sections = [sections[old] for old in new_order]
+    for i in items:
+        i[1] = remap3[i[1]]
+    for t in tip_rows:
+        t["s"] = remap3[t["s"]]
+
     for i in items:
         i[0] = sections[i[1]]["c"]
     for t in tip_rows:
