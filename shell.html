@@ -1665,6 +1665,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
   var yt = null, ytReady = false, pending = null, curIdx = -1, hist = [], hpos = -1;
   var pendingListVid = null, plActive = false;   // playlist mode: cue list, then jump to the linked song
   var vinylMode = false, shufOn = true, pendingListAdvance = false;   // vinyl-button shuffle toggle
+  var errStreak = 0;   // consecutive unavailable videos, reset on successful play
 
   function loadYT(){
     if (document.getElementById('ytapi')) return;
@@ -1693,8 +1694,18 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
             return;
           }
           if (e.data === YT.PlayerState.ENDED) nextTrack();
-          if (e.data === YT.PlayerState.PLAYING) updateSongTitle();
+          if (e.data === YT.PlayerState.PLAYING){ errStreak = 0; updateSongTitle(); }
           syncPlayBtn(e.data === YT.PlayerState.PLAYING);
+        },
+        onError: function(){
+          // Unavailable video (deleted, private, embed-blocked): skip to the next track.
+          if (!playerEl.classList.contains('on') || curIdx < 0) return;
+          if (++errStreak > 5) return;   // several broken videos in a row — stop rather than loop forever
+          setTimeout(function(){
+            if (!playerEl.classList.contains('on')) return;
+            if (yt && yt.getPlayerState && yt.getPlayerState() === YT.PlayerState.PLAYING) return;   // playlist recovered on its own
+            nextTrack();
+          }, 1000);
         }
       }
     });
