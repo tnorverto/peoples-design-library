@@ -590,12 +590,20 @@ def build(src):
                             twin[8].append([clean_text(FIRE.sub("", l)), u]); have.add(u)
                 continue
             note = clean_text(FIRE.sub("", note or ""))
+            # pricing markers move out of the note text and into flag bits (8 freemium, 16 paid)
+            pricing = 0
+            if re.search(r"not\s+free", note, re.I):
+                pricing = 16
+                note = re.sub(r"[\s\-–—:,(]*not\s+free[!.)]*[\s\-–—:,)]*", " ", note, flags=re.I).strip(" -–—:,/")
+            elif re.search(r"freemium", note, re.I):
+                pricing = 8
+                note = re.sub(r"[\s\-–—:,(]*freemium[!.)]*[\s\-–—:,)]*", " ", note, flags=re.I).strip(" -–—:,/")
             if len(note) > 140:
                 note = note[:140].rsplit(" ", 1)[0] + "…"
             fl = flags_for(name, note)
             if fl:
                 note = (fl + " " + note).strip()
-            flags = (1 if pick else 0) | (2 if pir else 0)
+            flags = (1 if pick else 0) | (2 if pir else 0) | pricing
             if prev is not None and url not in prev:
                 flags |= 4                     # new since the previous build
             row = [col_i, sec_lookup[key], sub or "", name, url, domain(url), flags, note]
