@@ -39,6 +39,13 @@ FIRE = re.compile("\U0001F525+")
 PIRATE = re.compile("\U0001F3F4\u200d\u2620\ufe0f|\u200d")
 WS = re.compile(r"\s+")
 TIPS_RE = re.compile(r"^Tips\s*&\s*tricks!?\s*[-–—:]?\s*", re.I)
+# bold sheet lines that are advice, not category names — parsed as tips
+# (the durable convention is prefixing the cell with "Tips & tricks -")
+TIP_LINES = {
+    "framework to come up with ideas that stick",
+    "proffessionally designed offer to keep customers",
+    "professionally designed offer to keep customers",
+}
 KW_RE = re.compile(r"keyword|jargon|grammar", re.I)
 PAT_RE = re.compile(r"^(Types of .+ Patterns|Historic Wallpapers)\s*:?\s*$", re.I)
 COUNTRY_FLAGS = [
@@ -313,6 +320,13 @@ def parse_sheet(col_i, html):
             else:
                 tip_state[ci] = {"c": col_i, "t": rest or "Tip", "row": ri,
                                  "body": [], "links": [], "last": ri}
+            continue
+
+        # ---- librarian-flagged tip lines (no "Tips & tricks" prefix in the sheet)
+        if clean_text(text).rstrip(":").strip().lower() in TIP_LINES:
+            close_tip(ci)
+            tip_state[ci] = {"c": col_i, "t": clean_text(text).rstrip(":").strip(), "row": ri,
+                             "body": [], "links": [], "last": ri}
             continue
 
         # ---- patterns & archives zone (Historic Wallpapers, Types of X Patterns)
