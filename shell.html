@@ -442,7 +442,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .comfy .card-name{font-size:17px}
 .comfy .card-note{font-size:13px}
 .pinrow{grid-column:1/-1;display:flex;flex-direction:row;align-items:center;gap:10px;min-height:0;padding:7px 14px}
-.pinrow .card-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+.pinrow{min-width:0}
+.pinrow .card-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
 .pinrow .card-foot{flex:none;margin:0}
 .comfy .pinrow{min-height:0;padding:7px 14px;gap:10px}
 .comfy .pinrow .card-name{font-size:13.5px}
@@ -463,10 +464,21 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .card.wasrow{position:relative}
 .card.wasrow .xpb,.rowlist .card.xp .xpb{display:inline-flex;position:absolute;left:8px;top:8px;z-index:3;background:var(--card);border-color:var(--line-strong)}
 .sub-head{grid-column:1/-1;font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:16px 2px 6px;margin-top:4px}
-.rowlist .grid.grouped{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
-.rowlist .grid.grouped .sub-head{grid-column:1/-1}
-.rowlist .grid.grouped .pinrow{grid-column:auto}
-@media (max-width:900px){.rowlist .grid.grouped{grid-template-columns:1fr}}
+.grid.grouped{display:block}
+.grp-card{background:var(--card);border:1px solid var(--line-strong);border-radius:4px;margin-bottom:10px;overflow:hidden}
+.grp-head-row{display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;background:none;border:0;cursor:pointer;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);text-align:left}
+.grp-head-row:hover{color:var(--teal)}
+.grp-head-row .chev2{flex:none;transition:transform .15s}
+.grp-card.open .grp-head-row .chev2{transform:rotate(90deg)}
+.grp-head-row .gcount{margin-left:auto;color:var(--ink-faint)}
+.grp-body{display:none;padding:2px 12px 12px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.grp-card.open .grp-body{display:grid}
+.grp-body .pinrow{grid-column:1/-1}
+.comfy .grp-body{grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.rowlist .grp-body{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 14px}
+.rowlist .grp-body .card{min-width:0}
+.rowlist .grp-body .pinrow{grid-column:auto}
+@media (max-width:900px){.rowlist .grp-body{grid-template-columns:minmax(0,1fr)}}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .card.enter{animation:rise .4s cubic-bezier(.2,.7,.3,1) both}
 @keyframes chipin{from{opacity:0;transform:translateY(6px) scale(.92)}to{opacity:1;transform:none}}
@@ -1444,7 +1456,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     }
   });
 
-  var subHeads = {};
+  var gGroups = null, gNested = null, groupOpen = {};
   // Filtering
   function applyFilter(){
     if (state.community && favDB){
@@ -1499,19 +1511,22 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       for (var f=0; f<filtered.length; f++){ (items[filtered[f]][6]&1 ? p : r).push(filtered[f]); }
       filtered = p.concat(r);
     }
-    // section views group under subcategory titles; collection views group under section titles
-    subHeads = {};
-    var grouped = false;
-    var gkey = null;
-    if (state.sec >= 0 && !state.sub && !state.blk) gkey = function(fi){ return items[fi][2] || ''; };
-    else if (state.sec < 0 && (state.col >= 0 || state.grp)) gkey = function(fi){ return secs[items[fi][1]].n; };
-    if (gkey){
+    // grouped views become collapsible titled panels, with nested sub-titles inside
+    gGroups = null; gNested = null;
+    var topKey = null;
+    if (state.sec >= 0 && !state.sub && !state.blk){
+      topKey = function(fi){ var sv = items[fi][2] || ''; return sv.split(' \u00B7 ')[0]; };
+      gNested = function(fi){ var sv = items[fi][2] || ''; return sv.indexOf(' \u00B7 ') !== -1 ? sv.split(' \u00B7 ').slice(1).join(' \u00B7 ') : ''; };
+    } else if (state.sec < 0 && (state.col >= 0 || state.grp)){
+      topKey = function(fi){ return secs[items[fi][1]].n; };
+      gNested = function(fi){ return items[fi][2] || ''; };
+    }
+    if (topKey){
       var gOrder = {}, gN = 0;
-      filtered.forEach(function(fi){ var sv = gkey(fi); if (sv && !(sv in gOrder)) gOrder[sv] = gN++; });
+      filtered.forEach(function(fi){ var sv = topKey(fi); if (sv && !(sv in gOrder)) gOrder[sv] = gN++; });
       if (gN > 1){
-        grouped = true;
         var withKey = filtered.map(function(fi, k){
-          var sv = gkey(fi);
+          var sv = topKey(fi);
           return [fi, sv in gOrder ? gOrder[sv] : -1, k, isPinItem(fi) ? 1 : 0];
         });
         withKey.sort(function(x, y){
@@ -1521,17 +1536,18 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           return x[2] - y[2];                      // otherwise keep the chosen sort, stably
         });
         filtered = withKey.map(function(x){ return x[0]; });
-        var prevSub = null;
-        filtered.forEach(function(fi, k){
-          var sv = gkey(fi);
-          if (sv && sv !== prevSub) subHeads[k] = sv;
-          prevSub = sv;
+        gGroups = [];
+        var byLabel = {};
+        filtered.forEach(function(fi){
+          var lbl = topKey(fi) || 'Other';
+          if (!byLabel[lbl]){ byLabel[lbl] = {label: lbl, idxs: []}; gGroups.push(byLabel[lbl]); }
+          byLabel[lbl].idxs.push(fi);
         });
       }
     }
-    grid.classList.toggle('grouped', grouped);
+    grid.classList.toggle('grouped', !!gGroups);
     rendered = 0;
-    grid.querySelectorAll('.card,.tipcard,.empty,.loading-more,.sub-head').forEach(function(n){n.remove()});
+    grid.querySelectorAll('.card,.tipcard,.empty,.loading-more,.sub-head,.grp-card').forEach(function(n){n.remove()});
     updateCrumb();
     updateCount();
     renderPostits();
@@ -1884,13 +1900,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       a.classList.add('enter');
     return a;
   }
-  function renderChunk(){
-    var frag = document.createDocumentFragment();
-    var end = Math.min(rendered + CHUNK, filtered.length);
-    var stagger = 0;
-    for (var i=rendered;i<end;i++){
-      var idx = filtered[i], it = items[idx], m = meta[idx];
-      if (!it[4]){
+  function buildTip(idx){
+    var it = items[idx], m = meta[idx];
         var t = tips[it[8]];
         var d = document.createElement('div');
         d.className = 'tipcard';
@@ -1900,15 +1911,72 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           (t.b.length ? '<div class="tipbody">'+esc(t.b.join('\n'))+'</div>' : '')+
           (t.l.length ? '<div class="tiplinks">'+t.l.map(function(x){return '<a href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(x[0])+' \u2197</a>'}).join('')+'</div>' : '');
         d.classList.add('enter');
-        d.style.animationDelay = Math.min(stagger++ * 22, 520) + 'ms';
-        frag.appendChild(d);
-        continue;
+    return d;
+  }
+  function fillGroupBody(panel, g){
+    var body = panel.querySelector('.grp-body');
+    if (body.childNodes.length) return;
+    var frag = document.createDocumentFragment();
+    var pos = {}, nOrder = {}, nn = 0;
+    g.idxs.forEach(function(fi, k){ pos[fi] = k; });
+    if (gNested) g.idxs.forEach(function(fi){ var nv = gNested(fi); if (nv && !(nv in nOrder)) nOrder[nv] = nn++; });
+    var idxs = g.idxs.slice();
+    if (nn > 0){
+      idxs.sort(function(a, b){
+        var na = (gNested(a) || null) in nOrder ? nOrder[gNested(a)] : -1;
+        var nb = (gNested(b) || null) in nOrder ? nOrder[gNested(b)] : -1;
+        if (na !== nb) return na - nb;
+        return pos[a] - pos[b];
+      });
+    }
+    var prevN = null, st2 = 0;
+    idxs.forEach(function(fi){
+      if (gNested && nn > 0){
+        var nv = gNested(fi) || '';
+        if (nv && nv !== prevN && nv !== g.label){
+          var sh = document.createElement('div');
+          sh.className = 'sub-head';
+          sh.textContent = tc(nv);
+          frag.appendChild(sh);
+        }
+        prevN = nv;
       }
-      if (subHeads[i] !== undefined){
-        var sh = document.createElement('div');
-        sh.className = 'sub-head';
-        sh.textContent = tc(subHeads[i]);
-        frag.appendChild(sh);
+      var el = !items[fi][4] ? buildTip(fi) : (isPinItem(fi) ? buildPinRow(fi) : buildCard(fi));
+      el.style.animationDelay = Math.min(st2++ * 22, 520) + 'ms';
+      frag.appendChild(el);
+    });
+    body.appendChild(frag);
+  }
+  function renderChunk(){
+    var frag = document.createDocumentFragment();
+    if (gGroups){
+      if (rendered === 0){
+        var openDefault = !!state.q.trim();   // searching? show the matches right away
+        gGroups.forEach(function(g){
+          var open = (g.label in groupOpen) ? groupOpen[g.label] : openDefault;
+          var panel = document.createElement('div');
+          panel.className = 'grp-card' + (open ? ' open' : '');
+          panel.dataset.glabel = g.label;
+          panel.innerHTML = '<button class="grp-head-row" type="button" aria-expanded="'+open+'"><span class="chev2">\u25B8</span><span class="gtitle"></span><span class="gcount"></span></button><div class="grp-body"></div>';
+          panel.querySelector('.gtitle').textContent = tc(g.label);
+          panel.querySelector('.gcount').textContent = g.idxs.length;
+          if (open) fillGroupBody(panel, g);
+          frag.appendChild(panel);
+        });
+        grid.appendChild(frag);
+      }
+      rendered = filtered.length;
+      return;
+    }
+    var end = Math.min(rendered + CHUNK, filtered.length);
+    var stagger = 0;
+    for (var i=rendered;i<end;i++){
+      var idx = filtered[i], it = items[idx], m = meta[idx];
+      if (!it[4]){
+        var dt = buildTip(idx);
+        dt.style.animationDelay = Math.min(stagger++ * 22, 520) + 'ms';
+        frag.appendChild(dt);
+        continue;
       }
       var a = isPinItem(idx) ? buildPinRow(idx) : buildCard(idx);
       a.style.animationDelay = Math.min(stagger++ * 22, 520) + 'ms';
@@ -2119,6 +2187,21 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
+    var gh2 = e.target.closest('.grp-head-row');
+    if (gh2){
+      var panel2 = gh2.parentElement;
+      var lbl2 = panel2.dataset.glabel;
+      var isOpen = !panel2.classList.contains('open');
+      panel2.classList.toggle('open', isOpen);
+      gh2.setAttribute('aria-expanded', isOpen);
+      groupOpen[lbl2] = isOpen;
+      if (isOpen && gGroups){
+        var gg = null;
+        for (var q2 = 0; q2 < gGroups.length; q2++){ if (gGroups[q2].label === lbl2){ gg = gGroups[q2]; break; } }
+        if (gg) fillGroupBody(panel2, gg);
+      }
+      return;
+    }
     var xb = e.target.closest('.xpb');
     if (xb){
       e.preventDefault(); e.stopPropagation();
@@ -2317,6 +2400,20 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
   var pendingListVid = null, plActive = false;   // playlist mode: cue list, then jump to the linked song
   var vinylMode = false, shufOn = true, pendingListAdvance = false;   // vinyl-button shuffle toggle
   var errStreak = 0;   // consecutive unavailable videos, reset on successful play
+  var badLists = {};   // playlists that refused to embed (error 101/150) — don't retry them
+  var cueTimer = null;
+  // Blocked playlists often fail SILENTLY (no CUED, no error). If the cue hasn't
+  // resolved shortly, remember the list as bad and fall back to the single video.
+  function watchCue(lid){
+    clearTimeout(cueTimer);
+    cueTimer = setTimeout(function(){
+      if (!pendingListVid) return;
+      badLists[lid] = 1;
+      pendingListVid = null; pendingListAdvance = false; plActive = false;
+      var v = curIdx >= 0 ? ytId(items[curIdx][4]) : null;
+      if (v && yt && yt.loadVideoById) yt.loadVideoById(v);
+    }, 3500);
+  }
 
   function loadYT(){
     if (document.getElementById('ytapi')) return;
@@ -2340,6 +2437,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
             var ix = pl.indexOf(pendingListVid);
             if (ix < 0) return;   // stale CUED from a superseded playlist — wait for the right one
             pendingListVid = null;
+            clearTimeout(cueTimer);
             var adv = pendingListAdvance; pendingListAdvance = false;
             yt.playVideoAt(adv ? (ix + 1) % pl.length : ix);
             return;
@@ -2349,8 +2447,18 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           syncPlayBtn(e.data === YT.PlayerState.PLAYING);
         },
         onError: function(){
-          // Unavailable video (deleted, private, embed-blocked): skip to the next track.
           if (!playerEl.classList.contains('on') || curIdx < 0) return;
+          // Playlist refused to embed (labels often block album playlists): remember it
+          // and fall back to just the linked video, which usually still plays.
+          if (pendingListVid){
+            clearTimeout(cueTimer);
+            var badLid = ytList(items[curIdx][4]);
+            if (badLid) badLists[badLid] = 1;
+            pendingListVid = null; pendingListAdvance = false; plActive = false;
+            var fallbackId = ytId(items[curIdx][4]);
+            if (fallbackId && yt && yt.loadVideoById){ yt.loadVideoById(fallbackId); return; }
+          }
+          // Unavailable video (deleted, private, embed-blocked): skip to the next track.
           if (++errStreak > 5) return;   // several broken videos in a row — stop rather than loop forever
           setTimeout(function(){
             if (!playerEl.classList.contains('on')) return;
@@ -2392,9 +2500,11 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     markNowPlaying();
     if (!ytReady || !yt || !yt.loadVideoById){ pending = {i: i, s: !!single}; loadYT(); return; }
     var lid = single ? null : ytList(it[4]);   // shuffle plays stay single-song
+    if (lid && badLists[lid]) lid = null;      // playlist known to refuse embedding
     if (lid){
       plActive = true; pendingListVid = id;
       yt.cuePlaylist({listType: 'playlist', list: lid});
+      watchCue(lid);
     } else {
       plActive = false; pendingListVid = null;
       yt.loadVideoById(id);
@@ -2438,11 +2548,12 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
   function enterCurrentPlaylist(){
     if (curIdx < 0 || !yt || !yt.cuePlaylist) return false;
     var lid = ytList(items[curIdx][4]);
-    if (!lid) return false;
+    if (!lid || badLists[lid]) return false;
     plActive = true;
     pendingListVid = ytId(items[curIdx][4]);
     pendingListAdvance = true;
     yt.cuePlaylist({listType: 'playlist', list: lid});
+    watchCue(lid);
     return true;
   }
   var plShufBtn = document.getElementById('plShuf');
