@@ -612,6 +612,8 @@ def build(src):
             elif re.search(r"freemium", note, re.I):
                 pricing = 8
                 note = re.sub(r"[\s\-–—:,(]*freemium[!.)]*[\s\-–—:,)]*", " ", note, flags=re.I).strip(" -–—:,/")
+            if not pricing and sub and re.search(r"not\s*free", sub, re.I):
+                pricing = 16               # the whole group is labelled Not Free in the sheet
             if len(note) > 140:
                 note = note[:140].rsplit(" ", 1)[0] + "…"
             fl = flags_for(name, note)
@@ -791,14 +793,30 @@ def build(src):
             if t["s"] in p_old:
                 t["s"] = p_secs[print_bucket(t.get("row"), (t.get("sub") or "") + " " + t["t"], prefer_sub=True)]
 
+    # (c2) "Typography (Historical / Archive)" becomes a sub-group of Typography
+    for i in items:
+        if i[2] == "Typography (Historical / Archive)":
+            i[2] = "Typography · Historical / Archive"
+    for t in tip_rows:
+        if t.get("sub") == "Typography (Historical / Archive)":
+            t["sub"] = "Typography · Historical / Archive"
+
     # (d) explicit tip relocations
-    TIP_MOVES = [(re.compile(r"^LUTS?\b", re.I), "LOG LUTS")]
+    TIP_MOVES = [
+        (re.compile(r"^LUTS?\b", re.I), "LOG LUTS"),
+        (re.compile(r"^CREATING SEAMLESS TEXTURES$", re.I), "📜 Patterns & Archives"),
+    ]
     for t in tip_rows:
         for rx, target in TIP_MOVES:
             if rx.match(t["t"]):
                 key = (sections[t["s"]]["c"], target)
                 if key in sec_lookup:
                     t["s"], t["sub"] = sec_lookup[key], ""
+    # the Community Boards tip belongs to the Inspiration section itself, not its Logos sub
+    for t in tip_rows:
+        if (t["t"].strip().upper().startswith("FINDING INSPIRATION IN COMMUNITY BOARDS")
+                and sections[t["s"]]["n"] == "GRAPHIC/GENERAL DESIGN INSPIRATION"):
+            t["sub"] = ""
 
     # (e) prune sections emptied by the transforms
     used = {i[1] for i in items}
