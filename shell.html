@@ -280,7 +280,7 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .favb.pop{transform:scale(1.35)}
 .flagb{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;color:var(--ink-faint);opacity:.5;transition:color .15s,opacity .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
 .flagb:hover{color:var(--stamp);opacity:1;transform:scale(1.15)}
-.flagb.on{color:var(--stamp);opacity:1;cursor:default}
+.flagb.on{color:var(--stamp);opacity:1}
 .flagb.pop{transform:scale(1.35)}
 
 /* ---------- Music player ---------- */
@@ -462,11 +462,13 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
 @keyframes diceroll{20%{transform:rotate(-18deg)}45%{transform:rotate(14deg)}70%{transform:rotate(-8deg)}100%{transform:rotate(0)}}
 #surpriseBtn.rolling,#songBtn.rolling{animation:diceroll .45s ease}
 .sec-ico{width:18px;display:inline-block;text-align:center;margin-right:2px;flex:none}
-.song-btn{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;padding:0;border:none;background:none;cursor:pointer;flex:none}
-.song-btn .vinyl{width:54px;height:54px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}
-.song-btn:hover .vinyl,.song-btn.spinning .vinyl{animation:spin 1.8s linear infinite}
+.song-btn{display:inline-flex;align-items:center;justify-content:center;width:118px;padding:0;border:none;background:none;cursor:pointer;flex:none}
+.rplayer{position:relative;display:block;width:118px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.rplayer .rp-deck{position:relative;display:block;width:100%;z-index:2}
+.rplayer .rp-disc{position:absolute;left:6.64%;top:10.48%;width:63.68%;z-index:1;transform-origin:center}
+.song-btn:hover .rp-disc,.song-btn.spinning .rp-disc{animation:spin 1.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.song-btn:hover .vinyl,.song-btn.spinning .vinyl{animation:none}}
+@media (prefers-reduced-motion:reduce){.song-btn:hover .rp-disc,.song-btn.spinning .rp-disc{animation:none}}
 
 /* ---------- Mobile ---------- */
 .drawers-toggle{display:none}
@@ -530,20 +532,10 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     <button class="theme-btn" id="surpriseBtn" aria-label="Surprise me" title="Surprise me — open a random resource">🎲</button>
     <span id="favBtnSlot"></span>
     <button class="song-btn" id="songBtn" aria-label="Random song" title="Play a random track from the Music section" style="display:none">
-      <svg viewBox="0 0 40 40" class="vinyl" aria-hidden="true">
-        <defs><radialGradient id="vg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#1a1a1e"/><stop offset="58%" stop-color="#0d0d10"/>
-          <stop offset="60%" stop-color="#26262c"/><stop offset="100%" stop-color="#0d0d10"/>
-        </radialGradient></defs>
-        <circle cx="20" cy="20" r="19" fill="url(#vg)" stroke="#000" stroke-width="0.5"/>
-        <circle cx="20" cy="20" r="16" fill="none" stroke="#2a2a30" stroke-width="0.4" opacity="0.6"/>
-        <circle cx="20" cy="20" r="13.5" fill="none" stroke="#2a2a30" stroke-width="0.4" opacity="0.6"/>
-        <circle cx="20" cy="20" r="11" fill="none" stroke="#2a2a30" stroke-width="0.4" opacity="0.6"/>
-        <circle cx="20" cy="20" r="7.5" fill="var(--teal)"/>
-        <circle cx="20" cy="20" r="7.5" fill="none" stroke="#000" stroke-width="0.4" opacity="0.3"/>
-        <circle cx="20" cy="20" r="1.3" fill="#0d0d10"/>
-        <path d="M20 4 A16 16 0 0 1 33 12" fill="none" stroke="#fff" stroke-width="0.5" opacity="0.14"/>
-      </svg>
+      <span class="rplayer" aria-hidden="true">
+        <img class="rp-disc" src="assets/rp-disc.png" alt="">
+        <img class="rp-deck" src="assets/rp-deck.png" alt="">
+      </span>
     </button>
     <button class="theme-btn" id="dysBtn" aria-pressed="false" title="Dyslexia-friendly type (Atkinson Hyperlegible)">Aa</button>
     <button class="theme-btn" id="denBtn" aria-pressed="false" title="Comfortable spacing">▤</button>
@@ -741,15 +733,15 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
     var url = card && card.dataset.url;
     if (!url) return;
     var vid = voteId(url);
-    if (myFlags[vid]) return;                      // one report per browser per link
-    myFlags[vid] = 1;
+    var on = !myFlags[vid];                        // clicking again un-reports
+    if (on) myFlags[vid] = 1; else delete myFlags[vid];
     try { localStorage.setItem('pdl-flagged', JSON.stringify(myFlags)); } catch(e){}
-    btn.classList.add('on');
-    btn.title = 'Reported — thank you';
+    btn.classList.toggle('on', on);
+    btn.title = on ? 'Reported — thank you (click to undo)' : 'Report broken link';
     btn.classList.add('pop'); setTimeout(function(){ btn.classList.remove('pop'); }, 200);
     var nameEl = card.querySelector('.card-name');
     var body = {u: url, t: nameEl ? nameEl.textContent.trim().slice(0, 150) : '',
-                n: {'.sv': {'increment': 1}}, ts: {'.sv': 'timestamp'}};
+                n: {'.sv': {'increment': on ? 1 : -1}}, ts: {'.sv': 'timestamp'}};
     fetch(VOTES_DB.replace(/\/$/, '') + '/flags/' + vid + '.json',
       {method: 'PATCH', body: JSON.stringify(body)}).catch(function(){});
   }
@@ -1786,7 +1778,7 @@ html.dys{--font-body:'Atkinson Hyperlegible',system-ui,sans-serif;--font-display
         '<div class="card-foot"><div class="card-path">'+path+'</div>'+
         (it[1]===MUSIC_SEC && ytId(it[4]) ? '<button class="playbtn" data-i="'+idx+'" type="button" title="Play here">\u25B6</button>' : '')+
         (VOTES_DB && it[4] ? (function(){ var vid = voteId(it[4]);
-          return '<button class="flagb'+(myFlags[vid]?' on':'')+'" type="button" title="'+(myFlags[vid]?'Reported \u2014 thank you':'Report broken link')+'" aria-label="Report broken link">\u2691</button>'; })() : '')+
+          return '<button class="flagb'+(myFlags[vid]?' on':'')+'" type="button" title="'+(myFlags[vid]?'Reported \u2014 thank you (click to undo)':'Report broken link')+'" aria-label="Report broken link">\u2691</button>'; })() : '')+
         (FIREBASE ? (function(){ var vid = voteId(it[4]);
           return '<button class="favb'+(favSet[vid]?' on':'')+'" data-vid="'+vid+'" type="button">'+(favSet[vid]?'\u2764':'\u2661')+'</button>'; })() : '')+
         (VOTES_DB ? (function(){ var vid = voteId(it[4]); var n = votes[vid]||0;
