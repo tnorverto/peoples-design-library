@@ -198,6 +198,12 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .subchip .n{opacity:.55;margin-left:5px}
 .crumb{grid-column:1/-1;font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-soft);padding:4px 0 2px;border-bottom:1px solid var(--line);margin-bottom:2px;display:none}
 .crumb.show{display:block}
+.crumb-link{font-family:inherit;font-size:inherit;letter-spacing:inherit;color:var(--teal);background:none;border:0;padding:0;cursor:pointer}
+.crumb-link b{color:inherit;font-weight:600}
+.crumb-link:hover{text-decoration:underline}
+.crumb-here{color:var(--ink)}
+.crumb-here b{color:var(--ink);font-weight:600}
+.crumb-sep{opacity:.45;color:var(--ink-faint)}
 .section-note{grid-column:1/-1;margin:8px 0 4px;padding:15px 20px;border:1px solid var(--line-strong);border-radius:10px;text-align:center;font-family:var(--font-display);font-size:23px;font-weight:700;letter-spacing:.02em;color:var(--ink);background:linear-gradient(100deg,rgba(46,110,126,.10),rgba(168,80,47,.10));animation:noteIn .5s ease both}
 .section-note .gl-text{background:linear-gradient(90deg,var(--teal),var(--stamp));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .section-note .gl-fingers{display:inline-block;transform-origin:70% 90%;animation:glWave 1.1s ease-in-out infinite}
@@ -1769,17 +1775,34 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     countEl.textContent = filtCards.toLocaleString() + ' cards (' + filtTotal.toLocaleString() + ' links) of ' + linkTotal.toLocaleString() + ' total';
   }
   function updateCrumb(){
-    var parts = [];
-    if (state.col>=0) parts.push('<b>'+esc(cols[state.col].name)+'</b>');
-    if (state.sec<0 && state.grp) parts.push(esc(state.grpLabel || 'Group'));
-    if (state.sec>=0) parts.push(esc(tc(secs[state.sec].n)));
-    if (state.blk && !state.sub) parts.push(esc(tc(state.blk)));
-    if (state.sub) parts.push(esc(tc(state.sub)));
-    if (state.picks) parts.push('Librarian Picks');
-    if (state.fresh) parts.push('New this update');
-    if (state.favs) parts.push('\u2764 My favorites');
-    if (state.q.trim()) parts.push('“'+esc(state.q.trim())+'”');
-    if (parts.length){ crumb.innerHTML = 'FILED UNDER — ' + parts.join(' <span>/</span> '); crumb.classList.add('show'); }
+    // clickable path, Windows-Explorer style: each level jumps you back up to it
+    var parts = [];                       // navigable levels: {lvl, blk, label, bold}
+    if (state.col>=0) parts.push({lvl:'col', label:cols[state.col].name, bold:true});
+    if (state.sec<0 && state.grp) parts.push({lvl:'grp', label:state.grpLabel || 'Group'});
+    if (state.sec>=0) parts.push({lvl:'sec', label:tc(secs[state.sec].n)});
+    if (state.blk && !state.sub) parts.push({lvl:'blk', blk:state.blk, label:tc(state.blk)});
+    if (state.sub){
+      var segs = state.sub.split(' · ');
+      if (segs.length > 1){
+        parts.push({lvl:'blk', blk:segs[0], label:tc(segs[0])});
+        parts.push({lvl:'sub', label:tc(segs.slice(1).join(' · '))});
+      } else {
+        parts.push({lvl:'sub', label:tc(state.sub)});
+      }
+    }
+    var chips = [];                       // non-navigable filter chips
+    if (state.picks) chips.push('Librarian Picks');
+    if (state.fresh) chips.push('New this update');
+    if (state.favs) chips.push('\u2764 My favorites');
+    if (state.q.trim()) chips.push('“'+state.q.trim()+'”');
+    var chtml = parts.map(function(p, i){
+      var here = (i === parts.length - 1) && !chips.length;
+      var inner = (p.bold ? '<b>' : '') + esc(p.label) + (p.bold ? '</b>' : '');
+      return here ? '<span class="crumb-here">'+inner+'</span>'
+        : '<button type="button" class="crumb-link" data-lvl="'+p.lvl+'"'+(p.blk?' data-blk="'+esc(p.blk)+'"':'')+'>'+inner+'</button>';
+    });
+    chips.forEach(function(c){ chtml.push('<span class="crumb-here">'+esc(c)+'</span>'); });
+    if (chtml.length){ crumb.innerHTML = 'FILED UNDER — ' + chtml.join(' <span class="crumb-sep">›</span> '); crumb.classList.add('show'); }
     else crumb.classList.remove('show');
     // a warm little send-off at the top of the Job Search section
     if (state.sec>=0 && secs[state.sec].n.toUpperCase()==='JOB SEARCH' && !state.community){
@@ -1790,6 +1813,27 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     }
     renderSubbar();
   }
+  // clicking a breadcrumb level jumps back up to it
+  crumb.addEventListener('click', function(e){
+    var b = e.target.closest('.crumb-link');
+    if (!b) return;
+    tipsOff();
+    var lvl = b.dataset.lvl;
+    if (lvl === 'col'){ state.sec = -1; state.sub = ''; state.blk = ''; state.grp = null; state.grpKey = null; }
+    else if (lvl === 'grp'){ state.sec = -1; state.sub = ''; state.blk = ''; }
+    else if (lvl === 'sec'){ state.sub = ''; state.blk = ''; }
+    else if (lvl === 'blk'){ state.blk = b.dataset.blk || state.blk; state.sub = ''; }
+    else return;
+    state.facet = -1; state.facetSub = '';
+    if (state.col >= 0){
+      var dr = drawerList.children[state.col];
+      if (dr && !dr.classList.contains('open')){
+        drawerList.querySelectorAll('.drawer.open').forEach(function(d){ if (d !== dr) d.classList.remove('open'); });
+        dr.classList.add('open');
+      }
+    }
+    syncNav(); applyFilter(); scrollToResults();
+  });
 
   // searchable index of categories / subcategories / blocks for jump suggestions
   var navIndex = [];
@@ -1978,8 +2022,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     a.className = 'card pinrow' + (it[6]&1 ? ' picked' : '');
     a.href = it[4]; a.target = '_blank'; a.rel = 'noopener noreferrer';
     a.style.setProperty('--cc', cols[it[0]].color);
-    a.innerHTML = '<button class="xpb" type="button" title="Show full card" aria-label="Toggle full card">\u25B8</button>'+
-      '<div class="card-name">'+hl(esc(it[3]))+'</div>'+
+    a.innerHTML = '<div class="card-name">'+hl(esc(it[3]))+'</div>'+
       '<div class="card-foot">'+cardActions(idx,it,false,false)+'</div>';
     a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
     a.classList.add('enter');
@@ -2010,7 +2053,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var pirate = isPirate ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
       var nt = it[7] && /^(ig|youtube|yt|instagram)[\s\\/.,:;\-]*$/i.test(it[7]);
       var thumb = it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '';
-      a.innerHTML = '<button class="xpb" type="button" title="Show full card" aria-label="Toggle full card">\u25B8</button>' + thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠</span>' : '') +
+      a.innerHTML = thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠</span>' : '') +
         '<div class="card-top"><span class="callno">'+m.call+'</span><span class="right">'+pirate+'<span class="domain">'+esc(it[5])+'</span></span></div>'+
         '<div class="card-name">'+fav+hl(esc(it[3]))+'</div>'+
         (it[7] ? '<div class="card-note'+(nt?' nt':'')+'">'+esc(it[7])+'</div>' : '')+
@@ -2474,6 +2517,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     var btn = card.querySelector('.altbtn');
     if (!box) return;
     var open = box.classList.toggle('open');
+    card.classList.toggle('xp', open);                 // also reveal the links in list/compact mode
+    card.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
