@@ -458,8 +458,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .rowlist .card:hover{transform:none}
 .rowlist .card:not(.xp) .thumb,.rowlist .card:not(.xp) .altlinks,.rowlist .card:not(.xp) .stampnew,.rowlist .card:not(.xp) .card-path,.rowlist .card:not(.xp) .card-top{display:none!important}
 .rowlist .tipcard{display:none}
-.rowlist .card:not(.xp) .card-name{flex:1;min-width:0;font-size:13.5px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
-.rowlist .card:not(.xp) .card-note{flex:0 1 auto;min-width:0;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
+.rowlist .card:not(.xp) .card-name{flex:none;max-width:70%;min-width:0;font-size:13.5px;line-height:1.3;white-space:normal}
+.rowlist .card:not(.xp) .card-note{flex:1 1 0;min-width:0;font-size:11.5px;line-height:1.35;white-space:normal}
 .rowlist .card:not(.xp) .card-note.nt{display:none!important}
 .rowlist .card:not(.xp) .stamp{position:static;transform:none;flex:none;font-size:8px;padding:1px 4px}
 .rowlist .card:not(.xp) .card-foot{flex:none;margin:0 0 0 auto;align-items:center}
@@ -474,7 +474,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .card.wasrow .xpb,.rowlist .card.xp .xpb{display:inline-flex;position:absolute;left:8px;top:8px;z-index:3;background:var(--card);border-color:var(--line-strong)}
 .sub-head{grid-column:1/-1;font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:16px 2px 6px;margin-top:4px}
 .grid.grouped{display:block}
-.grp-tools{display:flex;justify-content:flex-end;padding:0 0 8px}
+.grp-tools{grid-column:1/-1;display:flex;justify-content:flex-end;padding:0 0 8px}
+.grp-tools.left{justify-content:flex-start}
 .grp-collapse{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:999px;padding:4px 11px;background:var(--card);cursor:pointer}
 .grp-collapse:hover{color:var(--teal);border-color:var(--teal)}
 .grp-card{background:var(--card);border:1px solid var(--line-strong);border-radius:4px;margin-bottom:10px;overflow:hidden}
@@ -1907,7 +1908,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var pirate = isPirate ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
       var nt = it[7] && /^(ig|youtube|yt|instagram)[\s\\/.,:;\-]*$/i.test(it[7]);
       var thumb = it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '';
-      a.innerHTML = '<button class="xpb" type="button" title="Show full card" aria-label="Toggle full card">\u25B8</button>' + thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠ PIRATE</span>' : '') +
+      a.innerHTML = '<button class="xpb" type="button" title="Show full card" aria-label="Toggle full card">\u25B8</button>' + thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠</span>' : '') +
         '<div class="card-top"><span class="callno">'+m.call+'</span><span class="right">'+pirate+'<span class="domain">'+esc(it[5])+'</span></span></div>'+
         '<div class="card-name">'+fav+hl(esc(it[3]))+'</div>'+
         (it[7] ? '<div class="card-note'+(nt?' nt':'')+'">'+esc(it[7])+'</div>' : '')+
@@ -2005,6 +2006,22 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       }
       rendered = filtered.length;
       return;
+    }
+    if (rendered === 0 && state.sec === MUSIC_SEC && (state.sub || state.blk)){
+      // inside one music genre: offer the same category-shuffle button as the grouped view
+      var mp2 = filtered.filter(function(fi){ return items[fi][1] === MUSIC_SEC && ytId(items[fi][4]); });
+      if (mp2.length >= 2){
+        var tools2 = document.createElement('div');
+        tools2.className = 'grp-tools left';
+        var pb2 = document.createElement('button');
+        pb2.className = 'grp-playlist';
+        pb2.type = 'button';
+        var glabel2 = state.sub ? state.sub.split(' · ').slice(-1)[0] : state.blk;
+        pb2.textContent = '▶ ' + tc(glabel2) + ' Playlist';
+        pb2.title = 'Play this category on shuffle';
+        tools2.appendChild(pb2);
+        frag.appendChild(tools2);
+      }
     }
     var end = Math.min(rendered + CHUNK, filtered.length);
     var stagger = 0;
@@ -2247,6 +2264,9 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
             break;
           }
         }
+      } else {
+        // standalone button above a genre-filtered view: play what the view shows
+        pool = filtered.filter(function(fi){ return items[fi][1] === MUSIC_SEC && ytId(items[fi][4]); });
       }
       if (pool.length) startPoolShuffle(pool);
       return;

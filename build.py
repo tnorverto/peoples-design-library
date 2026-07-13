@@ -793,6 +793,26 @@ def build(src):
             if t["s"] in p_old:
                 t["s"] = p_secs[print_bucket(t.get("row"), (t.get("sub") or "") + " " + t["t"], prefer_sub=True)]
 
+    # (c1) music genre families: nest related genres under one accordion group
+    # World Music = only the region/continent genres (per the spreadsheet's own grouping);
+    # cuisine-style genres (Cumbia, Flamenco, Salsa…) stay as their own top-level genres.
+    MUSIC_GROUPS = {
+        "Jazz": ["Instrumental Jazz", "Vocal Jazz", "Nu-Jazz", "Jazz Rap", "House Jazz"],
+        "Funk": ["Funk / Disco", "Nu-Funk"],
+        "World Music": ["Africa", "Americas", "Brasil", "Europe",
+                        "Middle East / Arab / Persian / Kurdish",
+                        "Northern / Eastern / South Eastern Asia",
+                        "Western / Central / Southern Asia"],
+    }
+    music_secs = {si for si, s in enumerate(sections) if s["n"] == "MUSIC"}
+    genre_parent = {sub: parent for parent, subs in MUSIC_GROUPS.items() for sub in subs}
+    for i in items:
+        if i[1] in music_secs and i[2] in genre_parent:
+            i[2] = genre_parent[i[2]] + " · " + i[2]
+    for t in tip_rows:
+        if t["s"] in music_secs and t.get("sub") in genre_parent:
+            t["sub"] = genre_parent[t["sub"]] + " · " + t["sub"]
+
     # (c2) "Typography (Historical / Archive)" becomes a sub-group of Typography
     for i in items:
         if i[2] == "Typography (Historical / Archive)":
