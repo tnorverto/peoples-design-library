@@ -57,19 +57,31 @@ COUNTRY_FLAGS = [
     (r"\bUSA\b|\bUS\b|United States", "🇺🇸"),
     (r"Portugal|Portuguese", "🇵🇹"), (r"Poland|Polish", "🇵🇱"), (r"Switzerland|Swiss", "🇨🇭"),
     (r"Austria(?!lia)", "🇦🇹"), (r"Belgium|Belgian", "🇧🇪"), (r"Ireland|Irish", "🇮🇪"),
-    (r"Greece", "🇬🇷"), (r"Japan\b|Japanese", "🇯🇵"), (r"China\b|Chinese", "🇨🇳"),
+    (r"Greece|Greek", "🇬🇷"), (r"Japan\b|Japanese", "🇯🇵"), (r"China\b|Chinese", "🇨🇳"),
     (r"India\b|Indian", "🇮🇳"), (r"Turkey|Turkish", "🇹🇷"), (r"Iran\b|Persia\b|Persian", "🇮🇷"),
     (r"Moro?cc?o|Moroccan|Morroco", "🇲🇦"), (r"Egypt", "🇪🇬"), (r"Mexico|Mexican", "🇲🇽"),
-    (r"Brazil", "🇧🇷"), (r"Peru\b|Peruvian", "🇵🇪"), (r"Bolivia", "🇧🇴"), (r"Chile\b", "🇨🇱"),
+    (r"Brazil|Brasil", "🇧🇷"), (r"Peru\b|Peruvian", "🇵🇪"), (r"Bolivia", "🇧🇴"), (r"Chile\b", "🇨🇱"),
     (r"Argentina", "🇦🇷"), (r"Canada|Canadian", "🇨🇦"), (r"Australia\b", "🇦🇺"),
     (r"Russia\b", "🇷🇺"), (r"Ukraine", "🇺🇦"), (r"Georgia\b", "🇬🇪"), (r"Armenia", "🇦🇲"),
     (r"Azerbaijan|\bAzer\b", "🇦🇿"), (r"Kazakh?stan|Kazajstan", "🇰🇿"),
     (r"Uzbekistan|\bUzbe\b", "🇺🇿"), (r"Tajikistan|\bTajiki\b", "🇹🇯"),
     (r"Nepal", "🇳🇵"), (r"Pakistan", "🇵🇰"), (r"Myanmar|\bMyanm\b", "🇲🇲"),
     (r"Thailand|Thai\b", "🇹🇭"), (r"Vietnam|\btnam\b", "🇻🇳"), (r"Korea\b|Korean", "🇰🇷"),
-    (r"Cc?zech", "🇨🇿"), (r"Hungary", "🇭🇺"), (r"Romania", "🇷🇴"), (r"Croatia", "🇭🇷"),
+    (r"Cc?zech", "🇨🇿"), (r"Hungary", "🇭🇺"), (r"Romania|Rumania", "🇷🇴"), (r"Croatia", "🇭🇷"),
     (r"Israel", "🇮🇱"), (r"Nigeria", "🇳🇬"), (r"Indonesia", "🇮🇩"), (r"Singapore", "🇸🇬"),
     (r"Taiwan", "🇹🇼"), (r"Slovenia", "🇸🇮"), (r"Estonia", "🇪🇪"),
+    # countries that show up in the collections but had no flag yet
+    (r"\bCuba\b|Cuban", "🇨🇺"), (r"Puerto\s*Ric", "🇵🇷"), (r"Jamaica", "🇯🇲"),
+    (r"Haiti", "🇭🇹"), (r"Colombia", "🇨🇴"), (r"Ecuador", "🇪🇨"),
+    (r"Uruguay", "🇺🇾"), (r"Costa Rica", "🇨🇷"),
+    (r"Senegal", "🇸🇳"), (r"\bMali\b|Malian", "🇲🇱"), (r"\bNiger\b", "🇳🇪"),
+    (r"Cameroon", "🇨🇲"), (r"South Africa", "🇿🇦"), (r"Zimbabwe", "🇿🇼"),
+    (r"Algeria", "🇩🇿"), (r"Ghana", "🇬🇭"), (r"Ethiopia", "🇪🇹"),
+    (r"\bCongo\b", "🇨🇬"), (r"Western Sahara", "🇪🇭"),
+    (r"New\s*Ze[a]?land", "🇳🇿"), (r"Serbia", "🇷🇸"), (r"Lithuania", "🇱🇹"),
+    (r"Bulgaria", "🇧🇬"), (r"Belarus", "🇧🇾"), (r"Mongolia", "🇲🇳"),
+    (r"Cambodia", "🇰🇭"), (r"Palestine", "🇵🇸"), (r"Lebanon", "🇱🇧"),
+    (r"\bSyria\b|Syrian", "🇸🇾"),
 ]
 COUNTRY_FLAGS = [(re.compile(p, re.I), f) for p, f in COUNTRY_FLAGS]
 
@@ -618,7 +630,7 @@ def build(src):
                 note = note[:140].rsplit(" ", 1)[0] + "…"
             fl = flags_for(name, note)
             if fl:
-                note = (fl + " " + note).strip()
+                note = (note + " " + fl).strip()   # flag sits at the right end of the text
             flags = (1 if pick else 0) | (2 if pir else 0) | pricing
             if prev is not None and url not in prev:
                 flags |= 4                     # new since the previous build

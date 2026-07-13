@@ -141,6 +141,18 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .blk-btn.active{color:var(--dc,var(--teal));font-weight:600}
 .blk-btn .n{flex:1}
 .blk-btn .c{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint)}
+.subgenre-list{display:none}
+.subgenre-list.show{display:block}
+.subgenre-btn{display:flex;width:100%;text-align:left;gap:8px;align-items:baseline;padding:3px 12px 3px 46px;font-size:11.5px;color:var(--ink-faint);transition:color .1s,background .1s}
+.subgenre-btn:hover{color:var(--ink);background:#F6F8F7}
+[data-theme="dark"] .subgenre-btn:hover{background:#1C2E32}
+.subgenre-btn.active{color:var(--dc,var(--teal));font-weight:600}
+.subgenre-btn .n{flex:1}
+.subgenre-btn .c{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-faint)}
+.blk-btn.mirror,.subgenre-btn.mirror{box-shadow:inset 3px 0 0 var(--dc,var(--teal))}
+.blk-btn.mirror{background:#F1F5F4}
+.subgenre-btn.mirror{background:#F6F8F7}
+[data-theme="dark"] .blk-btn.mirror,[data-theme="dark"] .subgenre-btn.mirror{background:#15272B}
 .all-btn{display:block;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line-strong);border-radius:3px;background:var(--card);font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:8px;border-left:4px solid var(--ink)}
 .all-btn:hover{background:#F6F8F7}
 .all-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -398,6 +410,9 @@ body:has(.player.on) .wc-box{bottom:118px}
 .community-composer input:focus,.community-composer textarea:focus,.comment-compose textarea:focus{border-color:var(--teal)}
 .community-composer textarea{min-height:88px;resize:vertical}
 .community-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.community-anon{display:inline-flex;align-items:center;gap:6px;margin-top:5px;font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);cursor:pointer;user-select:none}
+.community-anon input{width:auto;margin:0;accent-color:var(--teal)}
+.community-anon input:disabled{cursor:default}
 .community-identity,.community-error,.community-meta,.comment-meta{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint)}
 .community-identity button{color:var(--teal);text-decoration:underline}
 .community-submit,.comment-submit{border-radius:3px;background:var(--teal);color:#fff;padding:7px 13px;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
@@ -481,7 +496,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .subhead-playlist:hover{border-color:var(--teal);background:rgba(46,110,126,.12)}
 .grid.grouped{display:block}
 .grp-tools{grid-column:1/-1;display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:6px 0 8px;position:sticky;top:var(--tbh,104px);z-index:30;background:var(--paper)}
-.grp-tools .grp-collapse{margin-left:auto}
+.grp-tools .grp-toolbtns{margin-left:auto;display:flex;gap:8px}
 .grp-collapse{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:999px;padding:4px 11px;background:var(--card);cursor:pointer}
 .grp-collapse:hover{color:var(--teal);border-color:var(--teal)}
 .grp-card{background:var(--card);border:1px solid var(--line-strong);border-radius:4px;margin-bottom:10px;overflow:hidden}
@@ -1115,9 +1130,17 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var ico = secIcon(secs[si].n);
       var h = '<button class="'+cls+'" data-sec="'+si+'" data-col="'+ci+'">'+(ico?'<span class="sec-ico">'+ico+'</span>':'')+'<span class="n">'+esc(tc(secs[si].n))+'</span><span class="c">'+secCounts[si]+'</span></button>';
       if (secHier[si]){
-        var bl = blocksBySec[si], names = Object.keys(bl).sort(function(a,b){return bl[b]-bl[a]});
+        var bl = blocksBySec[si], names = Object.keys(bl).sort(function(a,b){return a.toLowerCase().localeCompare(b.toLowerCase());});
+        var subsAll = subsBySec[si] || {};
         h += '<div class="blk-list" data-sec="'+si+'">' + names.map(function(n){
-          return '<button class="blk-btn" data-sec="'+si+'" data-col="'+ci+'" data-blk="'+esc(n)+'"><span class="n">'+esc(tc(n))+'</span><span class="c">'+bl[n]+'</span></button>';
+          var pre = n + ' · ';
+          var kids = Object.keys(subsAll).filter(function(sv){ return sv.indexOf(pre) === 0; })
+                       .sort(function(a,b){ return a.toLowerCase().localeCompare(b.toLowerCase()); });
+          var btn = '<button class="blk-btn" data-sec="'+si+'" data-col="'+ci+'" data-blk="'+esc(n)+'"><span class="n">'+esc(tc(n))+'</span><span class="c">'+bl[n]+'</span></button>';
+          if (!kids.length) return btn;
+          return btn + '<div class="subgenre-list" data-sec="'+si+'" data-blk="'+esc(n)+'">' + kids.map(function(sv){
+            return '<button class="subgenre-btn" data-sec="'+si+'" data-col="'+ci+'" data-blk="'+esc(n)+'" data-subv="'+esc(sv)+'"><span class="n">'+esc(tc(sv.slice(pre.length)))+'</span><span class="c">'+subsAll[sv]+'</span></button>';
+          }).join('') + '</div>';
         }).join('') + '</div>';
       } else if (secSideSubs[si]){
         var sm = subsBySec[si], sn = Object.keys(sm).sort(function(a,b){return a.localeCompare(b)});
@@ -1215,6 +1238,14 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     return user ? 'Posting as ' + esc(communityName()) :
       'Posting as Anonymous \u00B7 <button type="button" data-caction="signin">sign in</button>';
   }
+  function communityAnonToggle(){
+    // signed-in members can opt out of showing their name; guests are always anonymous (locked on, for reassurance)
+    return '<label class="community-anon"><input type="checkbox" name="anon"'+(user ? '' : ' checked disabled')+'> Post anonymously</label>';
+  }
+  function postAnon(form){
+    var cb = form.elements.anon;
+    return !user || !!(cb && cb.checked);
+  }
   function loadCommunityPosts(force){
     if (!favDB || communityLoading || (communityLoaded && !force)) return;
     communityLoading = true;
@@ -1285,7 +1316,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       '<button type="button" data-cfmt="link" title="Insert link">\ud83d\udd17</button>'+
       '<span class="community-fmt-hint">**bold** \u00b7 *italic* \u00b7 [text](https://link)</span></div>'+
       '<textarea name="body" maxlength="2000" placeholder="Add some context\u2026 (optional)" aria-label="Post body"></textarea>'+
-      '<div class="community-compose-foot"><div><div class="community-identity">'+communityIdentity()+'</div><div class="community-error" aria-live="polite"></div></div>'+
+      '<div class="community-compose-foot"><div><div class="community-identity">'+communityIdentity()+'</div>'+communityAnonToggle()+'<div class="community-error" aria-live="polite"></div></div>'+
       '<button class="community-submit" type="submit">Post</button></div></form>'+
       '<div class="community-load-error community-error" aria-live="polite">'+esc(communityLoadError)+'</div>'+
       '<div class="community-list">'+(communityLoading && !communityLoaded ?
@@ -1319,7 +1350,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         '</div></div>';
     }).join('') : '<div class="community-empty">No comments yet.</div>')+'</div>'+
       '<form class="comment-compose"><textarea name="body" maxlength="1000" required placeholder="Write a comment\u2026" aria-label="Comment"></textarea>'+
-      '<div class="comment-compose-foot"><div><div class="community-identity">'+communityIdentity()+'</div><div class="community-error" aria-live="polite"></div></div>'+
+      '<div class="comment-compose-foot"><div><div class="community-identity">'+communityIdentity()+'</div>'+communityAnonToggle()+'<div class="community-error" aria-live="polite"></div></div>'+
       '<button class="comment-submit" type="submit">Comment</button></div></form>';
   }
   function loadCommunityComments(pid){
@@ -1355,7 +1386,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     }
     if (body.length > 2000) return;
     button.disabled = true;
-    var post = {t:title, b:body || '', u:url || '', a:user ? communityName() : null,
+    var post = {t:title, b:body || '', u:url || '', a:postAnon(form) ? null : communityName(),
       uid:user ? user.uid : null, ts:{'.sv':'timestamp'}, v:0, c:0};
     fetch(communityBase() + '/posts.json' + communityAuth(),
       {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(post)})
@@ -1382,7 +1413,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       return;
     }
     button.disabled = true;
-    var comment = {b:body, a:user ? communityName() : null, uid:user ? user.uid : null, ts:{'.sv':'timestamp'}};
+    var comment = {b:body, a:postAnon(form) ? null : communityName(), uid:user ? user.uid : null, ts:{'.sv':'timestamp'}};
     fetch(communityBase() + '/comments/' + encodeURIComponent(pid) + '.json' + communityAuth(),
       {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(comment)})
       .then(function(r){ if (!r.ok) throw new Error(); return r.json(); })
@@ -1418,6 +1449,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
   }
   function deleteCommunityPost(pid){
     if (!idToken) return;
+    if (!confirm('Are you sure you want to delete this post? This can’t be undone.')) return;
     fetch(communityBase() + '/posts/' + encodeURIComponent(pid) + '.json?auth=' + encodeURIComponent(idToken),
       {method:'DELETE'})
       .then(function(r){ if (!r.ok) throw new Error(); communityPosts = communityPosts.filter(function(p){ return p.id !== pid; }); renderCommunity(); })
@@ -1425,6 +1457,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
   }
   function deleteCommunityComment(pid, cid){
     if (!idToken) return;
+    if (!confirm('Are you sure you want to delete this comment? This can’t be undone.')) return;
     fetch(communityBase() + '/comments/' + encodeURIComponent(pid) + '/' + encodeURIComponent(cid) + '.json?auth=' + encodeURIComponent(idToken),
       {method:'DELETE'})
       .then(function(r){
@@ -1443,6 +1476,13 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     var post = e.target.closest('.community-post');
     if (e.target.id === 'communityComposer') submitCommunityPost(e.target);
     else if (e.target.classList.contains('comment-compose') && post) submitCommunityComment(e.target, post.dataset.pid);
+  });
+  // reflect the "Post anonymously" toggle in the "Posting as…" line right away
+  communityView.addEventListener('change', function(e){
+    if (e.target.name !== 'anon') return;
+    var foot = e.target.closest('.community-compose-foot, .comment-compose-foot');
+    var line = foot && foot.querySelector('.community-identity');
+    if (line) line.innerHTML = e.target.checked ? 'Posting as Anonymous' : communityIdentity();
   });
   communityView.addEventListener('click', function(e){
     var sort = e.target.closest('[data-csort]');
@@ -1555,6 +1595,11 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (topKey){
       var gOrder = {}, gN = 0;
       filtered.forEach(function(fi){ var sv = topKey(fi); if (sv && !(sv in gOrder)) gOrder[sv] = gN++; });
+      if (state.sort === 'alpha'){
+        // alphabetical sort: order the category panels by name, not by first appearance
+        Object.keys(gOrder).sort(function(a,b){ return a.toLowerCase().localeCompare(b.toLowerCase()); })
+          .forEach(function(l, idx){ gOrder[l] = idx; });
+      }
       if (gN > 1){
         var withKey = filtered.map(function(fi, k){
           var sv = topKey(fi);
@@ -2006,11 +2051,19 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
             tools.appendChild(vpb);
           }
         }
+        var tbtns = document.createElement('div');
+        tbtns.className = 'grp-toolbtns';
+        var expand = document.createElement('button');
+        expand.className = 'grp-collapse grp-expand';
+        expand.type = 'button';
+        expand.textContent = '\u2304 Expand all';
         var collapse = document.createElement('button');
         collapse.className = 'grp-collapse';
         collapse.type = 'button';
         collapse.textContent = '\u2303 Collapse all';
-        tools.appendChild(collapse);
+        tbtns.appendChild(expand);
+        tbtns.appendChild(collapse);
+        tools.appendChild(tbtns);
         frag.appendChild(tools);
         var openDefault = !!state.q.trim();   // searching? show the matches right away
         gGroups.forEach(function(g){
@@ -2034,6 +2087,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           frag.appendChild(panel);
         });
         grid.appendChild(frag);
+        mirrorAccordions();
       }
       rendered = filtered.length;
       return;
@@ -2153,6 +2207,32 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         b.dataset.subv !== undefined ? b.dataset.subv===state.sub : b.dataset.blk===state.blk);
       b.classList.toggle('active', on);
     });
+    // deeper level: show the active block's sub-genres, mark the chosen one
+    drawerList.querySelectorAll('.subgenre-list').forEach(function(d){
+      d.classList.toggle('show', +d.dataset.sec===state.sec && d.dataset.blk===state.blk);
+    });
+    drawerList.querySelectorAll('.subgenre-btn').forEach(function(b){
+      b.classList.toggle('active', +b.dataset.sec===state.sec && b.dataset.subv===state.sub);
+    });
+    // clear stale right-accordion mirroring on every navigation; grouped renders re-add it
+    drawerList.querySelectorAll('.mirror').forEach(function(el){ el.classList.remove('mirror'); });
+  }
+  // mirror the right-side open accordions onto the left menu (highlight the matching entries)
+  function mirrorAccordions(){
+    drawerList.querySelectorAll('.mirror').forEach(function(el){ el.classList.remove('mirror'); });
+    var open = {};
+    grid.querySelectorAll('.grp-card.open').forEach(function(p){ open[p.dataset.glabel] = true; });
+    drawerList.querySelectorAll('.blk-btn').forEach(function(b){
+      if (+b.dataset.sec===state.sec && b.dataset.blk !== undefined && open[b.dataset.blk]) b.classList.add('mirror');
+    });
+    if (state.blk){
+      var pre = state.blk + ' · ';
+      drawerList.querySelectorAll('.subgenre-btn').forEach(function(b){
+        if (+b.dataset.sec!==state.sec) return;
+        var rem = b.dataset.subv.indexOf(pre)===0 ? b.dataset.subv.slice(pre.length) : b.dataset.subv;
+        if (open[rem]) b.classList.add('mirror');
+      });
+    }
   }
 
   drawerList.addEventListener('click', function(e){
@@ -2196,6 +2276,18 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         state.grpKey = state.grp ? key : null;
         state.grpLabel = state.grp ? groupsByCol[gci][gi].label : '';
       }
+      syncNav(); applyFilter();
+      maybeCloseMobile();
+      scrollToResults();
+      return;
+    } else if (e.target.closest('.subgenre-btn')){
+      var sgb = e.target.closest('.subgenre-btn');
+      tipsOff();
+      state.col = +sgb.dataset.col;
+      state.sec = +sgb.dataset.sec;
+      state.blk = sgb.dataset.blk;                 // keep the block context around the sub-genre
+      state.grp = null; state.grpKey = null;
+      state.sub = (state.sub === sgb.dataset.subv) ? '' : sgb.dataset.subv;
       syncNav(); applyFilter();
       maybeCloseMobile();
       scrollToResults();
@@ -2283,6 +2375,21 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (btn) btn.textContent = (open ? '\u25BE ' : '\u25B8 ') + btn.textContent.slice(2);
   }
   grid.addEventListener('click', function(e){
+    var ge = e.target.closest('.grp-expand');
+    if (ge){
+      // open every top-level accordion (one level only); sub-headings inside are plain dividers
+      grid.querySelectorAll('.grp-card').forEach(function(panel){
+        panel.classList.add('open');
+        var head = panel.querySelector('.grp-head-row');
+        if (head) head.setAttribute('aria-expanded', 'true');
+        groupOpen[panel.dataset.glabel] = true;
+        if (gGroups){
+          for (var gi=0; gi<gGroups.length; gi++){ if (gGroups[gi].label === panel.dataset.glabel){ fillGroupBody(panel, gGroups[gi]); break; } }
+        }
+      });
+      mirrorAccordions();
+      return;
+    }
     var gc = e.target.closest('.grp-collapse');
     if (gc){
       grid.querySelectorAll('.grp-card.open').forEach(function(panel){
@@ -2291,6 +2398,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         if (head) head.setAttribute('aria-expanded', 'false');
         groupOpen[panel.dataset.glabel] = false;
       });
+      mirrorAccordions();
       return;
     }
     var shp = e.target.closest('.subhead-playlist');
@@ -2342,6 +2450,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         for (var q2 = 0; q2 < gGroups.length; q2++){ if (gGroups[q2].label === lbl2){ gg = gGroups[q2]; break; } }
         if (gg) fillGroupBody(panel2, gg);
       }
+      mirrorAccordions();
       return;
     }
     var xb = e.target.closest('.xpb');
