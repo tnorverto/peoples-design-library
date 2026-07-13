@@ -101,9 +101,12 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 
 /* ---------- Layout ---------- */
 .layout{max-width:1280px;margin:0 auto;padding:26px 28px 80px;display:grid;grid-template-columns:262px 1fr;gap:34px;align-items:start}
+/* the sidebar column stretches to the full row height so its sticky drawer
+   stays pinned no matter how far you scroll through a long section */
+.layout > div:first-child{align-self:stretch}
 
 /* ---------- Sidebar (the drawers) ---------- */
-.drawers{position:sticky;top:76px;max-height:calc(100vh - 96px);overflow-y:auto;scrollbar-width:thin;padding-right:4px}
+.drawers{position:sticky;top:calc(var(--tbh,104px) + 8px);max-height:calc(100vh - var(--tbh,104px) - 28px);overflow-y:auto;scrollbar-width:thin;padding-right:4px}
 .drawers::-webkit-scrollbar{width:6px}
 .drawers::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:999px}
 .drawers-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
@@ -454,15 +457,16 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .comfy .pinrow{min-height:0;padding:7px 14px;gap:10px}
 .comfy .pinrow .card-name{font-size:13.5px}
 .rowlist .grid{display:block}
-.rowlist .card:not(.xp){width:100%;min-height:0;margin-bottom:3px;padding:6px 10px;display:flex;flex-direction:row;align-items:center;gap:9px}
+.rowlist .card:not(.xp){width:100%;min-height:0;margin-bottom:3px;padding:6px 10px;display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;gap:2px 9px}
 .rowlist .card:hover{transform:none}
 .rowlist .card:not(.xp) .thumb,.rowlist .card:not(.xp) .altlinks,.rowlist .card:not(.xp) .stampnew,.rowlist .card:not(.xp) .card-path,.rowlist .card:not(.xp) .card-top{display:none!important}
 .rowlist .tipcard{display:none}
-.rowlist .card:not(.xp) .card-name{flex:none;max-width:70%;min-width:0;font-size:13.5px;line-height:1.3;white-space:normal}
-.rowlist .card:not(.xp) .card-note{flex:1 1 0;min-width:0;font-size:11.5px;line-height:1.35;white-space:normal}
+.rowlist .card:not(.xp) .card-name{flex:1 1 auto;order:0;min-width:0;font-size:13.5px;line-height:1.25;white-space:normal}
+/* subtitle drops to its own second line: small, single line, ellipsis (never vertical) */
+.rowlist .card:not(.xp) .card-note{order:2;flex:0 0 100%;max-width:100%;padding-left:26px;margin-top:-1px;font-size:11px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-style:italic}
 .rowlist .card:not(.xp) .card-note.nt{display:none!important}
 .rowlist .card:not(.xp) .stamp{position:static;transform:none;flex:none;font-size:8px;padding:1px 4px}
-.rowlist .card:not(.xp) .card-foot{flex:none;margin:0 0 0 auto;align-items:center}
+.rowlist .card:not(.xp) .card-foot{order:1;flex:none;margin:0 0 0 auto;align-items:center}
 .rowlist .card:not(.xp) .altbtn{display:none}
 .rowlist .pinrow{padding:6px 10px;margin-bottom:3px}
 .rowlist .card.xp{margin-bottom:10px}
@@ -472,10 +476,12 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
 .rowlist .card:not(.pinrow) .xpb{display:inline-flex}
 .card.wasrow{position:relative}
 .card.wasrow .xpb,.rowlist .card.xp .xpb{display:inline-flex;position:absolute;left:8px;top:8px;z-index:3;background:var(--card);border-color:var(--line-strong)}
-.sub-head{grid-column:1/-1;font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:16px 2px 6px;margin-top:4px}
+.sub-head{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--line);padding:16px 2px 6px;margin-top:4px}
+.subhead-playlist{flex:none;font-family:var(--font-mono);font-size:9.5px;letter-spacing:0;color:var(--teal);border:1px solid var(--line-strong);border-radius:999px;padding:2px 9px;background:var(--paper);cursor:pointer;text-transform:none}
+.subhead-playlist:hover{border-color:var(--teal);background:rgba(46,110,126,.12)}
 .grid.grouped{display:block}
-.grp-tools{grid-column:1/-1;display:flex;justify-content:flex-end;padding:6px 0 8px;position:sticky;top:var(--tbh,104px);z-index:30;background:var(--paper)}
-.grp-tools.left{justify-content:flex-start}
+.grp-tools{grid-column:1/-1;display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:6px 0 8px;position:sticky;top:var(--tbh,104px);z-index:30;background:var(--paper)}
+.grp-tools .grp-collapse{margin-left:auto}
 .grp-collapse{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:999px;padding:4px 11px;background:var(--card);cursor:pointer}
 .grp-collapse:hover{color:var(--teal);border-color:var(--teal)}
 .grp-card{background:var(--card);border:1px solid var(--line-strong);border-radius:4px;margin-bottom:10px;overflow:hidden}
@@ -1533,6 +1539,11 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (state.sec >= 0 && !state.sub && !state.blk){
       topKey = function(fi){ var sv = items[fi][2] || ''; return sv.split(' \u00B7 ')[0]; };
       gNested = function(fi){ var sv = items[fi][2] || ''; return sv.indexOf(' \u00B7 ') !== -1 ? sv.split(' \u00B7 ').slice(1).join(' \u00B7 ') : ''; };
+    } else if (state.sec >= 0 && state.blk && !state.sub && secHier[state.sec]){
+      // inside a family block (e.g. World Music): group by its sub-genres/regions
+      var preblk = state.blk + ' \u00B7 ';
+      topKey = function(fi){ var sv = items[fi][2] || ''; return sv.indexOf(preblk) === 0 ? sv.slice(preblk.length) : sv; };
+      gNested = function(fi){ return ''; };
     } else if (state.sec < 0 && (state.col >= 0 || state.grp)){
       topKey = function(fi){ return secs[items[fi][1]].n; };
       gNested = function(fi){ return items[fi][2] || ''; };
@@ -1800,15 +1811,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       subbar.style.display='none'; subbar.innerHTML=''; return;
     }
     if (secHier[state.sec] && state.blk){
-      // groups inside the chosen block
-      var m = subsBySec[state.sec], pre = state.blk + ' \u00B7 ';
-      var groups = Object.keys(m).filter(function(n){ return n.indexOf(pre)===0; }).sort();
-      if (!groups.length){ subbar.style.display='none'; subbar.innerHTML=''; return; }
-      var total = groups.reduce(function(a,n){return a+m[n]},0) + (m[state.blk]||0);
-      h = '<button class="subchip'+(state.sub?'':' active')+'" data-sub="" data-kind="sub">All<span class="n">'+total+'</span></button>';
-      groups.forEach(function(n){
-        h += '<button class="subchip'+(state.sub===n?' active':'')+'" data-sub="'+esc(n)+'" data-kind="sub">'+esc(tc(n.slice(pre.length)))+'<span class="n">'+m[n]+'</span></button>';
-      });
+      // groups inside the chosen block are now shown as accordion panels, not chips
+      subbar.style.display='none'; subbar.innerHTML=''; return;
     } else {
       var m2 = subsBySec[state.sec];
       var names = m2 ? Object.keys(m2) : [];
@@ -1951,6 +1955,12 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         return pos[a] - pos[b];
       });
     }
+    // playable-song count per sub-heading, so each music sub-group can offer its own shuffle
+    var playPerNv = {};
+    if (gNested) g.idxs.forEach(function(fi){
+      var nv = gNested(fi);
+      if (nv && items[fi][1] === MUSIC_SEC && ytId(items[fi][4])) playPerNv[nv] = (playPerNv[nv] || 0) + 1;
+    });
     var prevN = null, st2 = 0;
     idxs.forEach(function(fi){
       if (gNested && nn > 0){
@@ -1959,6 +1969,15 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           var sh = document.createElement('div');
           sh.className = 'sub-head';
           sh.textContent = tc(nv);
+          if (playPerNv[nv] >= 2){
+            var shb = document.createElement('button');
+            shb.className = 'subhead-playlist';
+            shb.type = 'button';
+            shb.dataset.nv = nv;
+            shb.textContent = '▶ ' + tc(nv.split(' · ').slice(-1)[0]) + ' Playlist';
+            shb.title = 'Play this sub-category on shuffle';
+            sh.appendChild(shb);
+          }
           frag.appendChild(sh);
         }
         prevN = nv;
@@ -1975,6 +1994,18 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       if (rendered === 0){
         var tools = document.createElement('div');
         tools.className = 'grp-tools';
+        if (state.sec === MUSIC_SEC && state.blk){
+          // grouped block view (e.g. World Music) \u2014 offer a shuffle of the whole block
+          var vpool = filtered.filter(function(fi){ return items[fi][1] === MUSIC_SEC && ytId(items[fi][4]); });
+          if (vpool.length >= 2){
+            var vpb = document.createElement('button');
+            vpb.className = 'grp-playlist';
+            vpb.type = 'button';
+            vpb.textContent = '\u25b6 ' + tc(state.blk) + ' Playlist';
+            vpb.title = 'Play this category on shuffle';
+            tools.appendChild(vpb);
+          }
+        }
         var collapse = document.createElement('button');
         collapse.className = 'grp-collapse';
         collapse.type = 'button';
@@ -2260,6 +2291,23 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         if (head) head.setAttribute('aria-expanded', 'false');
         groupOpen[panel.dataset.glabel] = false;
       });
+      return;
+    }
+    var shp = e.target.closest('.subhead-playlist');
+    if (shp){
+      e.preventDefault(); e.stopPropagation();
+      var spanel = shp.closest('.grp-card');
+      var nvKey = shp.dataset.nv;
+      var spool = [];
+      if (spanel && gGroups && gNested){
+        for (var q2 = 0; q2 < gGroups.length; q2++){
+          if (gGroups[q2].label === spanel.dataset.glabel){
+            spool = gGroups[q2].idxs.filter(function(fi){ return gNested(fi) === nvKey && items[fi][1] === MUSIC_SEC && ytId(items[fi][4]); });
+            break;
+          }
+        }
+      }
+      if (spool.length) startPoolShuffle(spool);
       return;
     }
     var gp = e.target.closest('.grp-playlist');
