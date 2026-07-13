@@ -106,8 +106,7 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .layout > div:first-child{align-self:stretch}
 
 /* ---------- Sidebar (the drawers) ---------- */
-.drawers{position:sticky;top:calc(var(--tbh,104px) + 8px);max-height:calc(100vh - var(--tbh,104px) - 28px);overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;padding-right:2px}
-.drawers::-webkit-scrollbar{width:0;height:0;display:none}
+.drawers{align-self:start;padding-right:2px}
 .drawers::-webkit-scrollbar{width:6px}
 .drawers::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:999px}
 .drawers-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
@@ -303,6 +302,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .auth-user img{width:20px;height:20px;border-radius:50%}
 .auth-user .out{cursor:pointer;color:#9FC1BC;border-bottom:1px dotted #9FC1BC}
 .auth-user .out:hover{color:#fff}
+.auth-signin{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:#C6D8D4;border:1px solid #4A6763;border-radius:999px;padding:4px 13px;background:rgba(255,255,255,.05);cursor:pointer}
+.auth-signin:hover{color:#fff;border-color:#9FC1BC;background:rgba(255,255,255,.1)}
 .favb{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:13px;color:var(--ink-faint);transition:color .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
 .favb:hover{color:#E0705A;transform:scale(1.15)}
 .favb.on{color:#E0705A}
@@ -908,7 +909,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         ' \u00B7 <span class="out" id="signOut">sign out</span></span>';
       document.getElementById('signOut').onclick = function(){ window.firebase.auth().signOut(); };
     } else {
-      authBox.innerHTML = '';
+      authBox.innerHTML = '<button class="auth-signin" id="signInBtn" type="button">Sign in</button>';
+      document.getElementById('signInBtn').onclick = signIn;
       if (state.favs){ state.favs = false; applyFilter(); }
     }
     favFilterBtn.style.display = 'none';
@@ -1122,7 +1124,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       {label:'\u2728 Inspiration', secs:['\uD83D\uDD24 Keywords','ARCHITECTURE / INTERIOR DESIGN INSPIRATION','ARCHITECTURE / INTERIOR DESIGN STUDIOS','\uD83D\uDCDC Patterns & Archives','FURNITURE /PRODUCT DESIGN INSPIRATION','ARCHVIZ STUDIOS / ARTISTS']}
     ],
     EX: [
-      {label:'\uD83D\uDC4D Personal Recommendations', secs:['INTERESTING READS','PODCASTS','SHORT FILMS','VIDEO ESSAYS / DOCUMENTARIES','DEBATE CHANNELS','COOL NATURE (IG VIDEOS)']}
+      {label:'\uD83D\uDC4D Personal Recommendations', pos:'end', secs:['INTERESTING READS','PODCASTS','SHORT FILMS','VIDEO ESSAYS / DOCUMENTARIES','DEBATE CHANNELS','COOL NATURE (IG VIDEOS)']}
     ]
   };
   // sections kept out of the left drawer list, reachable another way (here: the Palestine flag)
@@ -1138,7 +1140,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         var si = secsByCol[ci].find(function(s){ return secs[s].n === nm; });
         if (si !== undefined) found.push(si);
       });
-      if (found.length) out.push({label:g.label, secs:found});
+      if (found.length) out.push({label:g.label, secs:found, pos:g.pos});
     });
     if (out.length) groupsByCol[ci] = out;
   });
@@ -1148,13 +1150,26 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     d.className = 'drawer';
     d.style.setProperty('--dc', c.color);
     var gdefs = groupsByCol[ci] || [];
-    var pinned = [];
     var headAt = {};                     // ordered index -> group index
+    var pinned = [];                     // groups pinned to the top
     gdefs.forEach(function(g, gi){
+      if (g.pos === 'end') return;
       headAt[pinned.length] = gi;
       pinned = pinned.concat(g.secs);
     });
-    var ordered = pinned.concat(secsByCol[ci].filter(function(si){ return pinned.indexOf(si) === -1 && !HIDDEN_MENU_SECS[secs[si].n.toUpperCase()]; }));
+    var endGrouped = [];                  // sections belonging to end-pinned groups
+    gdefs.forEach(function(g){ if (g.pos === 'end') endGrouped = endGrouped.concat(g.secs); });
+    var claimed = {};
+    pinned.concat(endGrouped).forEach(function(si){ claimed[si] = 1; });
+    var rest = secsByCol[ci].filter(function(si){ return !claimed[si] && !HIDDEN_MENU_SECS[secs[si].n.toUpperCase()]; });
+    var endPinned = [];                   // end groups appended after everything else
+    var base = pinned.length + rest.length;
+    gdefs.forEach(function(g, gi){
+      if (g.pos !== 'end') return;
+      headAt[base + endPinned.length] = gi;
+      endPinned = endPinned.concat(g.secs);
+    });
+    var ordered = pinned.concat(rest).concat(endPinned);
     var secBtns = ordered.map(function(si, oi){
       var cls = secs[si].n.indexOf('Tips & Tricks') !== -1 ? 'sec-btn tips-sec' : 'sec-btn';
       var ico = secIcon(secs[si].n);
@@ -1182,7 +1197,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         var g = gdefs[headAt[oi]];
         h = '<div class="grp-head" data-col="'+ci+'" data-gi="'+headAt[oi]+'">'+g.label+'<span class="c">'+g.secs.reduce(function(a,s){return a+secCounts[s]},0)+'</span></div>' + h;
       }
-      if (pinned.length && oi === pinned.length){
+      if ((pinned.length && oi === pinned.length) || (endPinned.length && oi === base)){
         h = '<div class="grp-div"></div>' + h;
       }
       return h;
