@@ -106,7 +106,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .layout > div:first-child{align-self:stretch}
 
 /* ---------- Sidebar (the drawers) ---------- */
-.drawers{position:sticky;top:calc(var(--tbh,104px) + 8px);max-height:calc(100vh - var(--tbh,104px) - 28px);overflow-y:auto;scrollbar-width:thin;padding-right:4px}
+.drawers{position:sticky;top:calc(var(--tbh,104px) + 8px);max-height:calc(100vh - var(--tbh,104px) - 28px);overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;padding-right:2px}
+.drawers::-webkit-scrollbar{width:0;height:0;display:none}
 .drawers::-webkit-scrollbar{width:6px}
 .drawers::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:999px}
 .drawers-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px}
@@ -167,10 +168,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .toolbox-item a:hover{text-decoration:underline}
 .toolbox-item .os{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;color:var(--ink-faint);border:1px solid var(--line-strong);border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:1px}
 .toolbox-item .warn{display:block;font-size:11px;font-style:italic;color:var(--ink-faint);margin-top:2px}
-.pal-flag{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:9px 12px;border-top:1px solid var(--line);background:none;cursor:pointer;font-family:var(--font-body);font-size:12px;font-weight:600;color:var(--teal)}
-.pal-flag:hover{background:#F6F8F7}
-[data-theme="dark"] .pal-flag:hover{background:#1C2E32}
-.pal-flag span{text-decoration:underline}
+.pal-flag{display:block;width:100%;margin:16px 0 0;padding:4px;background:none;border:0;cursor:pointer;font-size:56px;line-height:1;text-align:center;transition:transform .15s ease;filter:drop-shadow(0 2px 7px rgba(21,40,44,.18))}
+.pal-flag:hover{transform:scale(1.06)}
 
 /* ---------- Cards ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
@@ -651,8 +650,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         <div class="toolbox-item"><span class="os">WIN</span><a href="https://apps.microsoft.com/detail/xp89dcgq3k6vld" target="_blank" rel="noopener">PowerToys</a> — eyedropper for anything on screen (change the shortcut to Win+C)</div>
         <div class="toolbox-item"><span class="os">MAC</span><a href="https://colorslurp.com/" target="_blank" rel="noopener">ColorSlurp</a> — eyedropper for anything on screen</div>
         <div class="toolbox-item" id="toolboxFont"></div>
-        <button class="pal-flag" id="palFlag" type="button" title="Open Human Rights for Palestine">🇵🇸 <span>Human Rights for Palestine</span></button>
       </div>
+      <button class="pal-flag" id="palFlag" type="button" title="Human Rights for Palestine" aria-label="Human Rights for Palestine">🇵🇸</button>
     </nav>
   </div>
   <main>
