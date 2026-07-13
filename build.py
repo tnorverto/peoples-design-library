@@ -918,6 +918,21 @@ def build(src):
     for t in tip_rows:
         t["c"] = sections[t["s"]]["c"]
 
+    # Cooking → three buckets: Recipe Websites, Youtube Cooking Channels, IG Cooking Channels.
+    # The old Instagram sub-genres (In English, Vegan, Fast Food…) are kept, nested under IG.
+    cook_idx = next((i for i, s in enumerate(sections) if s["n"].strip().upper() == "COOKING"), None)
+    if cook_idx is not None:
+        for it in items:
+            if it[1] != cook_idx:
+                continue
+            sub, dom = it[2] or "", (it[5] or "").lower()
+            if "youtu" in dom or sub == "Youtube Cooking Channels":
+                it[2] = "Youtube Cooking Channels"
+            elif sub == "Recipe Websites":
+                it[2] = "Recipe Websites"
+            else:
+                genre = re.sub(r"\s*IG(\s+Cooking)?\s+Channels$", "", sub, flags=re.I).strip()
+                it[2] = "IG Cooking Channels · " + genre if genre else "IG Cooking Channels"
 
     out = {
         "collections": [{"name": n, "c": None, "code": c, "color": col} for n, c, col in OUT_COLLECTIONS],
