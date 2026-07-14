@@ -314,6 +314,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .favb:hover{color:#E0705A;transform:scale(1.15)}
 .favb.on{color:#E0705A}
 .favb.pop{transform:scale(1.35)}
+.coverb{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;line-height:1;background:none;border:0;cursor:pointer;opacity:.4;filter:grayscale(1);transition:opacity .15s,filter .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
+.coverb:hover,.coverb.on{opacity:1;filter:none;transform:scale(1.12)}
 .flagb{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;color:var(--ink-faint);opacity:.5;transition:color .15s,opacity .15s,transform .18s cubic-bezier(.3,1.8,.5,1)}
 .flagb:hover{color:var(--stamp);opacity:1;transform:scale(1.15)}
 .flagb.on{color:var(--stamp);opacity:1}
@@ -1242,6 +1244,14 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       })
       .catch(function(){});
   }
+  // admin-set cover images (id -> image url), shown instead of the slow auto screenshot
+  var coverBy = {};
+  if (favDB){
+    fetch(favDB.replace(/\/$/, '') + '/admin/covers.json')
+      .then(function(r){ return r.json(); })
+      .then(function(j){ coverBy = j || {}; if (rendered) applyFilter(); })
+      .catch(function(){});
+  }
   var communityView = document.getElementById('communityView');
   var communityPosts = [];
   var communitySort = 'new';
@@ -1999,11 +2009,30 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       (pricing === 'paid' ? 'Paid \u2014 not free' : 'Freemium \u2014 has a free tier, paid upgrades');
     return '<span class="pdot '+cls+(admin?' admin':'')+'" data-i="'+idx+'" title="'+title+'"></span>';
   }
+  function coverBtn(idx,it){
+    if (!it[4] || !user || (user.email || '').toLowerCase() !== ADMIN_EMAIL) return '';
+    var vid = meta[idx].vid, has = vid && coverBy[vid];
+    return '<button class="coverb'+(has?' on':'')+'" data-i="'+idx+'" type="button" title="'+(has?'Change or remove cover image':'Add a cover image')+'" aria-label="Set cover image">🖼</button>';
+  }
+  function applyCoverToCard(card, idx){
+    if (!card) return;
+    var vid = meta[idx].vid, cover = vid && coverBy[vid];
+    var img = card.querySelector('.thumb');
+    if (cover){
+      card.dataset.cover = cover;
+      if (img){ img.classList.add('ok'); img.src = cover; }
+    } else {
+      delete card.dataset.cover;
+      if (img){ img.classList.remove('ok'); if (items[idx][4]) img.src = 'https://s.wordpress.com/mshots/v1/'+encodeURIComponent(items[idx][4])+'?w=320&h=200'; }
+    }
+    var cvb = card.querySelector('.coverb');
+    if (cvb) cvb.classList.toggle('on', !!cover);
+  }
   function cardActions(idx,it,withPricing,withPlay){
     return (withPlay && it[1]===MUSIC_SEC && ytId(it[4]) ? '<button class="playbtn" data-i="'+idx+'" type="button" title="Play here">\u25B6</button>' : '')+
       (VOTES_DB && it[4] ? (function(){ var vid = voteId(it[4]);
         return '<button class="flagb'+(myFlags[vid]?' on':'')+'" type="button" title="'+(myFlags[vid]?'Reported \u2014 thank you (click to undo)':'Report broken link')+'" aria-label="Report broken link">\u2691</button>'; })() : '')+
-      (withPricing ? pricingDot(idx,it) : '')+
+      (withPricing ? pricingDot(idx,it) + coverBtn(idx,it) : '')+
       (FIREBASE ? (function(){ var vid = voteId(it[4]);
         return '<button class="favb'+(favSet[vid]?' on':'')+'" data-vid="'+vid+'" type="button">'+(favSet[vid]?'\u2764':'\u2661')+'</button>'; })() : '')+
       (VOTES_DB ? (function(){ var vid = voteId(it[4]); var n = votes[vid]||0;
@@ -2052,7 +2081,9 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var isPirate = (it[6]&2) || secPirate[it[1]];
       var pirate = isPirate ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
       var nt = it[7] && /^(ig|youtube|yt|instagram)[\s\\/.,:;\-]*$/i.test(it[7]);
-      var thumb = it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '';
+      var cover = m.vid && coverBy[m.vid];
+      var thumb = cover ? '<img class="thumb ok" loading="lazy" src="'+esc(cover)+'" alt="">'
+        : (it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '');
       a.innerHTML = thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠</span>' : '') +
         '<div class="card-top"><span class="callno">'+m.call+'</span><span class="right">'+pirate+'<span class="domain">'+esc(it[5])+'</span></span></div>'+
         '<div class="card-name">'+fav+hl(esc(it[3]))+'</div>'+
@@ -2064,6 +2095,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         cardActions(idx,it,true,true)+
         '</div>';
       a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
+      if (cover) a.dataset.cover = cover;
       a.classList.add('enter');
     return a;
   }
@@ -2665,6 +2697,23 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
           pd.className = 'pdot '+(oldPricing === 'paid' ? 'pd' : (oldPricing === 'freemium' ? 'fm' : 'fr'))+' admin';
           pd.title = 'Save failed \u2014 try again';
         });
+      return;
+    }
+    var cvb = e.target.closest('.coverb');
+    if (cvb && user && (user.email || '').toLowerCase() === ADMIN_EMAIL){
+      e.preventDefault(); e.stopPropagation();
+      var cidx = +cvb.dataset.i, cit = items[cidx], cvid = meta[cidx].vid;
+      if (!favDB || !idToken || !cvid){ alert('Sign in as admin to set covers.'); return; }
+      var nu = prompt('Cover image URL for:\n' + cit[3] + '\n\n(paste a direct image link; leave empty to remove)', coverBy[cvid] || '');
+      if (nu === null) return;
+      nu = nu.trim();
+      fetch(favDB.replace(/\/$/, '') + '/admin/covers/' + encodeURIComponent(cvid) + '.json?auth=' + encodeURIComponent(idToken),
+        nu ? {method:'PUT', body:JSON.stringify(nu)} : {method:'DELETE'})
+        .then(function(r){ if (!r.ok) throw new Error('save');
+          if (nu) coverBy[cvid] = nu; else delete coverBy[cvid];
+          applyCoverToCard(cvb.closest('.card'), cidx);
+        })
+        .catch(function(){ alert('Couldn’t save the cover — try again.'); });
       return;
     }
     var flb = e.target.closest('.flagb');
@@ -3313,10 +3362,16 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       hoverTimer = setTimeout(function(){
         curUrl = card.dataset.url; tries = 0; stage = 0;
         pvDom.textContent = card.dataset.dom || '';
-        pvSt.textContent = 'loading…';
         pvImg.style.display = 'block';
-        pvImg.removeAttribute('src');
-        pvImg.src = mshots(curUrl);
+        var cov = card.dataset.cover;
+        if (cov){                       // admin cover → show instantly, no screenshot wait
+          pvSt.textContent = '';
+          pvImg.src = cov;
+        } else {
+          pvSt.textContent = 'loading…';
+          pvImg.removeAttribute('src');
+          pvImg.src = mshots(curUrl);
+        }
         position(card);
         pv.style.display = 'block';
       }, 380);
