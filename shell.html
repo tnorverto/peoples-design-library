@@ -216,6 +216,8 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .card:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .thumb{display:none;width:calc(100% + 28px);margin:-13px -14px 6px;height:66px;object-fit:cover;object-position:top;border-radius:3px 3px 0 0;border-bottom:1px solid var(--line);filter:saturate(.92)}
 .thumb.ok{display:block}
+.card.hascover .thumb{height:auto;aspect-ratio:4/3}
+.card.hascover .card-path{display:none}
 .comfy .thumb{width:calc(100% + 38px);margin:-18px -19px 8px;height:84px}
 .no-ext .thumb{display:none!important}
 .card:hover .thumb{filter:saturate(1.05)}
@@ -2027,6 +2029,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (!card) return;
     var vid = meta[idx].vid, cover = vid && coverBy[vid] && coverCache[vid];
     var img = card.querySelector('.thumb');
+    card.classList.toggle('hascover', !!cover);
     if (cover){
       card.dataset.cover = cover;
       if (img){ img.classList.add('ok'); img.src = cover; }
@@ -2132,6 +2135,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var pirate = isPirate ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
       var nt = it[7] && /^(ig|youtube|yt|instagram)[\s\\/.,:;\-]*$/i.test(it[7]);
       var hasCover = m.vid && coverBy[m.vid];
+      if (hasCover) a.classList.add('hascover');
       var thumb = hasCover ? '<img class="thumb" alt="">'
         : (it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '');
       a.innerHTML = thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠</span>' : '') +
