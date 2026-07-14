@@ -220,6 +220,7 @@ select.picks-toggle{appearance:none;-webkit-appearance:none;padding-right:14px;c
 .card.hascover .card-path{display:none}
 .comfy .thumb{width:calc(100% + 38px);margin:-18px -19px 8px;height:84px}
 .no-ext .thumb{display:none!important}
+.no-ext .card.hascover .thumb.ok{display:block!important}   /* admin covers aren't external — keep them */
 .card:hover .thumb{filter:saturate(1.05)}
 .card-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .callno{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.05em;color:var(--cc,var(--teal));font-weight:500}
@@ -3419,7 +3420,7 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var card = e.target.closest && e.target.closest('.card');
       if (!card || !card.dataset.url) return;
       clearTimeout(hoverTimer); clearTimeout(retryTimer);
-      if (extImagesOK === false) return;
+      if (extImagesOK === false && !card.dataset.cover) return;   // covers are self-hosted, still previewable
       hoverTimer = setTimeout(function(){
         curUrl = card.dataset.url; tries = 0; stage = 0;
         pvDom.textContent = card.dataset.dom || '';
