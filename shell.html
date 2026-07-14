@@ -1244,12 +1244,21 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       })
       .catch(function(){});
   }
-  // admin-set cover images (id -> image url), shown instead of the slow auto screenshot
-  var coverBy = {};
+  // admin-set cover images, shown instead of the slow auto screenshot.
+  // Only the ids are loaded upfront (shallow); each image (a URL or an uploaded
+  // data-URL) is fetched lazily when its card renders, so page load stays light.
+  var coverBy = {}, coverCache = {};
   if (favDB){
-    fetch(favDB.replace(/\/$/, '') + '/admin/covers.json')
+    fetch(favDB.replace(/\/$/, '') + '/admin/covers.json?shallow=true')
       .then(function(r){ return r.json(); })
       .then(function(j){ coverBy = j || {}; if (rendered) applyFilter(); })
+      .catch(function(){});
+  }
+  function fetchCover(vid, cb){
+    if (coverCache[vid]){ cb(coverCache[vid]); return; }
+    fetch(favDB.replace(/\/$/, '') + '/admin/covers/' + encodeURIComponent(vid) + '.json')
+      .then(function(r){ return r.json(); })
+      .then(function(v){ if (typeof v === 'string' && v){ coverCache[vid] = v; cb(v); } })
       .catch(function(){});
   }
   var communityView = document.getElementById('communityView');
@@ -2012,11 +2021,11 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
   function coverBtn(idx,it){
     if (!it[4] || !user || (user.email || '').toLowerCase() !== ADMIN_EMAIL) return '';
     var vid = meta[idx].vid, has = vid && coverBy[vid];
-    return '<button class="coverb'+(has?' on':'')+'" data-i="'+idx+'" type="button" title="'+(has?'Change or remove cover image':'Add a cover image')+'" aria-label="Set cover image">🖼</button>';
+    return '<button class="coverb'+(has?' on':'')+'" data-i="'+idx+'" type="button" title="'+(has?'Cover set — click to upload a new image · Alt+click to remove · Shift+click to paste a URL':'Add a cover image — click to upload · Shift+click to paste a URL')+'" aria-label="Set cover image">🖼</button>';
   }
   function applyCoverToCard(card, idx){
     if (!card) return;
-    var vid = meta[idx].vid, cover = vid && coverBy[vid];
+    var vid = meta[idx].vid, cover = vid && coverBy[vid] && coverCache[vid];
     var img = card.querySelector('.thumb');
     if (cover){
       card.dataset.cover = cover;
@@ -2028,6 +2037,47 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     var cvb = card.querySelector('.coverb');
     if (cvb) cvb.classList.toggle('on', !!cover);
   }
+  // shrink a picked image in the browser (max 680px wide, JPEG) so uploads stay small
+  function fileToCover(file, cb){
+    var fr = new FileReader();
+    fr.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        var w = Math.min(680, img.width || 680);
+        var h = Math.max(1, Math.round((img.height || 1) * w / (img.width || 1)));
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        var q = 0.8, d = c.toDataURL('image/jpeg', q);
+        while (d.length > 250000 && q > 0.4){ q -= 0.15; d = c.toDataURL('image/jpeg', q); }
+        cb(d);
+      };
+      img.onerror = function(){ alert('That file doesn’t look like an image.'); };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  function saveCover(cidx, cvid, card, value){
+    fetch(favDB.replace(/\/$/, '') + '/admin/covers/' + encodeURIComponent(cvid) + '.json?auth=' + encodeURIComponent(idToken),
+      value ? {method:'PUT', body:JSON.stringify(value)} : {method:'DELETE'})
+      .then(function(r){ if (!r.ok) throw new Error('save');
+        if (value){ coverBy[cvid] = true; coverCache[cvid] = value; }
+        else { delete coverBy[cvid]; delete coverCache[cvid]; }
+        applyCoverToCard(card, cidx);
+      })
+      .catch(function(){ alert('Couldn’t save the cover — try again.'); });
+  }
+  // hidden file picker shared by all cover buttons
+  var coverInput = document.createElement('input');
+  coverInput.type = 'file'; coverInput.accept = 'image/*'; coverInput.style.display = 'none';
+  document.body.appendChild(coverInput);
+  var coverTarget = null;   // {idx, vid, card} of the card being edited
+  coverInput.addEventListener('change', function(){
+    var f = coverInput.files && coverInput.files[0];
+    var t = coverTarget;
+    coverInput.value = ''; coverTarget = null;
+    if (!f || !t) return;
+    fileToCover(f, function(dataUrl){ saveCover(t.idx, t.vid, t.card, dataUrl); });
+  });
   function cardActions(idx,it,withPricing,withPlay){
     return (withPlay && it[1]===MUSIC_SEC && ytId(it[4]) ? '<button class="playbtn" data-i="'+idx+'" type="button" title="Play here">\u25B6</button>' : '')+
       (VOTES_DB && it[4] ? (function(){ var vid = voteId(it[4]);
@@ -2081,8 +2131,8 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
       var isPirate = (it[6]&2) || secPirate[it[1]];
       var pirate = isPirate ? '<span class="pir" title="Pirate site — be careful: use an adblocker and scan downloads">\uD83C\uDFF4\u200D\u2620\uFE0F</span>' : '';
       var nt = it[7] && /^(ig|youtube|yt|instagram)[\s\\/.,:;\-]*$/i.test(it[7]);
-      var cover = m.vid && coverBy[m.vid];
-      var thumb = cover ? '<img class="thumb ok" loading="lazy" src="'+esc(cover)+'" alt="">'
+      var hasCover = m.vid && coverBy[m.vid];
+      var thumb = hasCover ? '<img class="thumb" alt="">'
         : (it[4] ? '<img class="thumb" loading="lazy" src="https://s.wordpress.com/mshots/v1/'+encodeURIComponent(it[4])+'?w=320&h=200" alt="">' : '');
       a.innerHTML = thumb + (it[6]&1 ? '<span class="stamp">PICK</span>' : '') + (it[6]&4 ? '<span class="stampnew">NEW</span>' : '') + (isPirate ? '<span class="stamp stamp-pir" title="Pirate site — be careful: use an adblocker and scan downloads">☠</span>' : '') +
         '<div class="card-top"><span class="callno">'+m.call+'</span><span class="right">'+pirate+'<span class="domain">'+esc(it[5])+'</span></span></div>'+
@@ -2095,7 +2145,11 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
         cardActions(idx,it,true,true)+
         '</div>';
       a.dataset.url = it[4]; a.dataset.dom = it[5]; a.dataset.i = idx;
-      if (cover) a.dataset.cover = cover;
+      if (hasCover) fetchCover(m.vid, function(u){
+        a.dataset.cover = u;
+        var timg = a.querySelector('.thumb');
+        if (timg){ timg.src = u; timg.classList.add('ok'); }
+      });
       a.classList.add('enter');
     return a;
   }
@@ -2703,17 +2757,20 @@ mark{background:none;color:var(--teal);font-weight:800;text-decoration:underline
     if (cvb && user && (user.email || '').toLowerCase() === ADMIN_EMAIL){
       e.preventDefault(); e.stopPropagation();
       var cidx = +cvb.dataset.i, cit = items[cidx], cvid = meta[cidx].vid;
+      var ccard = cvb.closest('.card');
       if (!favDB || !idToken || !cvid){ alert('Sign in as admin to set covers.'); return; }
-      var nu = prompt('Cover image URL for:\n' + cit[3] + '\n\n(paste a direct image link; leave empty to remove)', coverBy[cvid] || '');
-      if (nu === null) return;
-      nu = nu.trim();
-      fetch(favDB.replace(/\/$/, '') + '/admin/covers/' + encodeURIComponent(cvid) + '.json?auth=' + encodeURIComponent(idToken),
-        nu ? {method:'PUT', body:JSON.stringify(nu)} : {method:'DELETE'})
-        .then(function(r){ if (!r.ok) throw new Error('save');
-          if (nu) coverBy[cvid] = nu; else delete coverBy[cvid];
-          applyCoverToCard(cvb.closest('.card'), cidx);
-        })
-        .catch(function(){ alert('Couldn’t save the cover — try again.'); });
+      if (e.altKey){                      // Alt+click removes the cover
+        if (coverBy[cvid] && confirm('Remove the cover image for:\n' + cit[3] + '?')) saveCover(cidx, cvid, ccard, null);
+        return;
+      }
+      if (e.shiftKey){                    // Shift+click still accepts a pasted URL
+        var nu = prompt('Cover image URL for:\n' + cit[3] + '\n\n(direct image link, e.g. assets/covers/name.jpg)', coverCache[cvid] || '');
+        if (nu === null) return;
+        saveCover(cidx, cvid, ccard, nu.trim() || null);
+        return;
+      }
+      coverTarget = {idx: cidx, vid: cvid, card: ccard};   // plain click: pick a file from the PC
+      coverInput.click();
       return;
     }
     var flb = e.target.closest('.flagb');
